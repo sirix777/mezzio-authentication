@@ -1,0 +1,87 @@
+{
+    "name": "sirix/mezzio-authentication",
+    "description": "Token-based authentication package for Mezzio framework with optional attribute-based support",
+    "license": "MIT",
+    "keywords": [
+        "mezzio",
+        "laminas",
+        "authentication",
+        "auth",
+        "token",
+        "middleware",
+        "psr-15",
+        "attributes"
+    ],
+    "authors": [
+        {
+            "name": "Sirix",
+            "homepage": "https://github.com/sirix777"
+        }
+    ],
+    "require": {
+        "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0",
+        "psr/container": "^1.0 || ^2.0",
+        "psr/http-factory": "^1.0",
+        "psr/http-message": "^1.1 || ^2.0",
+        "psr/http-server-middleware": "^1.0",
+        "sirix/mezzio-routing-contracts": "^0.1.0"
+    },
+    "require-dev": {
+        "bamarni/composer-bin-plugin": "^1.8",
+        "laminas/laminas-servicemanager": "^3.23",
+        "mezzio/mezzio-session": "^1.17",
+        "nyholm/psr7": "^1.8",
+        "phpunit/phpunit": "^11.5"
+    },
+    "suggest": {
+        "mezzio/mezzio-session": "For session-based token storage (SessionTokenStorage). Requires Mezzio\\Session\\SessionMiddleware in pipeline.",
+        "sirix/mezzio-routing-attributes": "For #[Authenticated] / #[GuestOnly] attribute integration with attribute-based routing"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Sirix\\Mezzio\\Authentication\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SirixTest\\Mezzio\\Authentication\\": "test/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true
+        },
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "extra": {
+        "bamarni-bin": {
+            "bin-links": false,
+            "forward-command": true,
+            "target-directory": "tools"
+        },
+        "laminas": {
+            "config-provider": [
+                "Sirix\\Mezzio\\Authentication\\ConfigProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "analyse-deps": "tools/composer-dependency-analyser/vendor/bin/composer-dependency-analyser",
+        "check": [
+            "@cs-check",
+            "@rector",
+            "@phpstan",
+            "@test"
+        ],
+        "cs-check": "php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --dry-run -vvv --diff",
+        "cs-fix": "php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix -vvv",
+        "normalize": "@composer bin composer-normalize normalize --diff ../../composer.json",
+        "phpstan": "php tools/phpstan/vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=2G",
+        "rector": "php tools/rector/vendor/bin/rector process --dry-run --memory-limit=2G",
+        "test": "php vendor/bin/phpunit --colors=always --testdox"
+    }
+}

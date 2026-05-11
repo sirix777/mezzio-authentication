@@ -1,0 +1,56 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SirixTest\Mezzio\Authentication\Actor;
+
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+use Sirix\Mezzio\Authentication\Actor\ContextActorProvider;
+use Sirix\Mezzio\Authentication\Actor\GuestActor;
+use Sirix\Mezzio\Authentication\Contract\ActorInterface;
+use Sirix\Mezzio\Authentication\Contract\AuthContextInterface;
+use Sirix\Mezzio\Authentication\Contract\SecurityActorProviderInterface;
+
+final class ContextActorProviderTest extends TestCase
+{
+    #[Test]
+    public function implementsSecurityActorProviderInterface(): void
+    {
+        $provider = new ContextActorProvider(
+            $this->createStub(AuthContextInterface::class),
+            new GuestActor(),
+        );
+
+        self::assertInstanceOf(SecurityActorProviderInterface::class, $provider);
+    }
+
+    #[Test]
+    public function returnsActorFromContext(): void
+    {
+        $actor = $this->createStub(ActorInterface::class);
+
+        $context = $this->createMock(AuthContextInterface::class);
+        $context
+            ->expects($this->once())
+            ->method('actor')
+            ->willReturn($actor)
+        ;
+
+        $provider = new ContextActorProvider($context, new GuestActor());
+
+        self::assertSame($actor, $provider->getActor());
+    }
+
+    #[Test]
+    public function returnsGuestWhenContextHasNoActor(): void
+    {
+        $context = $this->createStub(AuthContextInterface::class);
+        $context->method('actor')->willReturn(null);
+
+        $guest = new GuestActor();
+        $provider = new ContextActorProvider($context, $guest);
+
+        self::assertSame($guest, $provider->getActor());
+    }
+}
