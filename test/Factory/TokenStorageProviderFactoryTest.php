@@ -8,13 +8,13 @@ use InvalidArgumentException;
 use LogicException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
 use Sirix\Mezzio\Authentication\Factory\TokenStorageProviderFactory;
 use Sirix\Mezzio\Authentication\Storage\NullTokenStorage;
 use Sirix\Mezzio\Authentication\Storage\SessionTokenStorage;
+use SirixTest\Mezzio\Authentication\Support\ArrayContainer;
 use stdClass;
 
 final class TokenStorageProviderFactoryTest extends TestCase
@@ -23,7 +23,7 @@ final class TokenStorageProviderFactoryTest extends TestCase
     public function fallsBackToNullStorageWhenSessionStorageIsNotRegistered(): void
     {
         $factory = new TokenStorageProviderFactory();
-        $container = $this->createContainer([
+        $container = new ArrayContainer([
             'config' => ['authentication' => ['default_storage' => 'session']],
             NullTokenStorage::class => new NullTokenStorage(),
         ]);
@@ -38,7 +38,7 @@ final class TokenStorageProviderFactoryTest extends TestCase
     {
         $factory = new TokenStorageProviderFactory();
         $sessionStorage = new SessionTokenStorage();
-        $container = $this->createContainer([
+        $container = new ArrayContainer([
             'config' => ['authentication' => ['default_storage' => 'session']],
             NullTokenStorage::class => new NullTokenStorage(),
             SessionTokenStorage::class => $sessionStorage,
@@ -67,7 +67,7 @@ final class TokenStorageProviderFactoryTest extends TestCase
             public function delete(TokenInterface $token, ?ServerRequestInterface $request = null): void {}
         };
 
-        $container = $this->createContainer([
+        $container = new ArrayContainer([
             'config' => [
                 'authentication' => [
                     'default_storage' => 'redis',
@@ -90,7 +90,7 @@ final class TokenStorageProviderFactoryTest extends TestCase
     public function throwsForMappedServiceWithInvalidType(): void
     {
         $factory = new TokenStorageProviderFactory();
-        $container = $this->createContainer([
+        $container = new ArrayContainer([
             'config' => [
                 'authentication' => [
                     'storages' => [
@@ -105,28 +105,5 @@ final class TokenStorageProviderFactoryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         $factory($container);
-    }
-
-    /**
-     * @param array<string, mixed> $services
-     */
-    private function createContainer(array $services): ContainerInterface
-    {
-        return new class($services) implements ContainerInterface {
-            /**
-             * @param array<string, mixed> $services
-             */
-            public function __construct(private array $services) {}
-
-            public function get(string $id): mixed
-            {
-                return $this->services[$id];
-            }
-
-            public function has(string $id): bool
-            {
-                return isset($this->services[$id]);
-            }
-        };
     }
 }

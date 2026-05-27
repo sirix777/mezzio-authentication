@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace SirixTest\Mezzio\Authentication;
 
-use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
@@ -17,14 +16,15 @@ use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
+use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
 final class AuthenticationManagerTest extends TestCase
 {
-    private Psr17Factory $factory;
+    private Psr7Factory $factory;
 
     protected function setUp(): void
     {
-        $this->factory = new Psr17Factory();
+        $this->factory = new Psr7Factory();
     }
 
     #[Test]

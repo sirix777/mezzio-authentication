@@ -4,22 +4,22 @@ declare(strict_types=1);
 
 namespace SirixTest\Mezzio\Authentication\Transport;
 
-use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
 use Sirix\Mezzio\Authentication\Transport\BearerTokenTransport;
+use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
 final class BearerTokenTransportTest extends TestCase
 {
     private BearerTokenTransport $transport;
-    private Psr17Factory $factory;
+    private Psr7Factory $factory;
 
     protected function setUp(): void
     {
         $this->transport = new BearerTokenTransport();
-        $this->factory = new Psr17Factory();
+        $this->factory = new Psr7Factory();
     }
 
     #[Test]

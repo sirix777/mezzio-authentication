@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace SirixTest\Mezzio\Authentication\Storage;
 
 use Mezzio\Session\SessionInterface;
-use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
@@ -14,18 +13,19 @@ use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
 use Sirix\Mezzio\Authentication\Storage\SessionTokenStorage;
 use Sirix\Mezzio\Authentication\Storage\StorageException;
 use SirixTest\Mezzio\Authentication\Support\InMemorySession;
+use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
 use function usleep;
 
 final class SessionTokenStorageTest extends TestCase
 {
     private InMemorySession $session;
-    private Psr17Factory $factory;
+    private Psr7Factory $factory;
 
     protected function setUp(): void
     {
         $this->session = new InMemorySession();
-        $this->factory = new Psr17Factory();
+        $this->factory = new Psr7Factory();
     }
 
     #[Test]
