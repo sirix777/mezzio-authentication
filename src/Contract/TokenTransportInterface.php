@@ -9,7 +9,7 @@ use Psr\Http\Message\ServerRequestInterface;
 
 interface TokenTransportInterface
 {
-    public function fetch(ServerRequestInterface $request): ?string;
+    public function fetch(ServerRequestInterface $serverRequest): ?string;
 
     public function attach(ResponseInterface $response, TokenInterface $token): ResponseInterface;
 

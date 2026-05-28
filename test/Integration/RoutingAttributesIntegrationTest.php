@@ -56,7 +56,7 @@ final class RoutingAttributesIntegrationTest extends TestCase
     #[Test]
     public function routingAttributesRegistersAuthenticationMiddlewareInNonCachedMode(): void
     {
-        $collector = $this->createCollector();
+        $routeCollector = $this->createCollector();
 
         $this->createProvider(
             [
@@ -65,27 +65,27 @@ final class RoutingAttributesIntegrationTest extends TestCase
             ],
             new NullRouteRegistrarCache(),
             $this->createExtractor(),
-        )->registerRoutes($collector);
+        )->registerRoutes($routeCollector);
 
-        $this->assertRegisteredRoutes($collector->getRoutes());
+        $this->assertRegisteredRoutes($routeCollector->getRoutes());
     }
 
     #[Test]
     public function routingAttributesRegistersAuthenticationMiddlewareInCachedMode(): void
     {
-        $cache = $this->createCompiledCache();
-        $warmupCollector = $this->createCollector();
+        $compiledRouteRegistrarCache = $this->createCompiledCache();
+        $routeCollector = $this->createCollector();
 
         $this->createProvider(
             [
                 AuthenticatedRouteHandler::class,
                 GuestOnlyRouteHandler::class,
             ],
-            $cache,
+            $compiledRouteRegistrarCache,
             $this->createExtractor(),
-        )->registerRoutes($warmupCollector);
+        )->registerRoutes($routeCollector);
 
-        self::assertNotSame([], $warmupCollector->getRoutes());
+        self::assertNotSame([], $routeCollector->getRoutes());
 
         $cachedCollector = $this->createCollector();
         $unusedExtractor = $this->createMock(AttributeRouteExtractorInterface::class);
@@ -94,7 +94,7 @@ final class RoutingAttributesIntegrationTest extends TestCase
             ->method('extract')
         ;
 
-        $this->createProvider([], $cache, $unusedExtractor)->registerRoutes($cachedCollector);
+        $this->createProvider([], $compiledRouteRegistrarCache, $unusedExtractor)->registerRoutes($cachedCollector);
 
         $this->assertRegisteredRoutes($cachedCollector->getRoutes());
     }
@@ -106,12 +106,12 @@ final class RoutingAttributesIntegrationTest extends TestCase
     {
         self::assertCount(2, $routes);
 
-        $authenticated = $this->routeByName($routes, 'integration.authenticated');
-        self::assertSame('/integration/authenticated', $authenticated->getPath());
-        self::assertSame(['GET'], $authenticated->getAllowedMethods());
+        $route = $this->routeByName($routes, 'integration.authenticated');
+        self::assertSame('/integration/authenticated', $route->getPath());
+        self::assertSame(['GET'], $route->getAllowedMethods());
         self::assertSame(
             AuthenticateMiddleware::class . ' -> ' . AuthenticatedRouteHandler::class . '::handle',
-            $authenticated->getOptions()[self::MIDDLEWARE_DISPLAY] ?? null,
+            $route->getOptions()[self::MIDDLEWARE_DISPLAY] ?? null,
         );
 
         $guest = $this->routeByName($routes, 'integration.guest');
@@ -143,10 +143,10 @@ final class RoutingAttributesIntegrationTest extends TestCase
     private function createProvider(
         array $classes,
         CompiledRouteRegistrarCache|NullRouteRegistrarCache $cache,
-        AttributeRouteExtractorInterface $extractor,
+        AttributeRouteExtractorInterface $attributeRouteExtractor,
     ): AttributeRouteProvider {
         return new AttributeRouteProvider(
-            $extractor,
+            $attributeRouteExtractor,
             $classes,
             new DuplicateRouteResolver(),
             new MiddlewarePipelineFactory(new ArrayContainer(), new ServiceMiddlewareResolver()),
@@ -156,13 +156,13 @@ final class RoutingAttributesIntegrationTest extends TestCase
 
     private function createExtractor(): AttributeRouteExtractor
     {
-        $reader = new RouteAttributeReader();
+        $routeAttributeReader = new RouteAttributeReader();
 
         return new AttributeRouteExtractor(
             new ClassEligibilityValidator(),
-            $reader,
+            $routeAttributeReader,
             new RouteDefinitionBuilder(
-                $reader,
+                $routeAttributeReader,
                 new MethodSignatureValidator(),
                 new RouteDataNormalizer(),
             ),

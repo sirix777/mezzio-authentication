@@ -14,24 +14,24 @@ final class TokenActorTest extends TestCase
     #[Test]
     public function implementsActorInterface(): void
     {
-        $actor = new TokenActor([]);
+        $tokenActor = new TokenActor([]);
 
-        self::assertInstanceOf(ActorInterface::class, $actor);
+        self::assertInstanceOf(ActorInterface::class, $tokenActor);
     }
 
     #[Test]
     public function returnsRoles(): void
     {
-        $actor = new TokenActor(['admin', 'editor']);
+        $tokenActor = new TokenActor(['admin', 'editor']);
 
-        self::assertSame(['admin', 'editor'], $actor->getRoles());
+        self::assertSame(['admin', 'editor'], $tokenActor->getRoles());
     }
 
     #[Test]
     public function returnsEmptyRolesByDefault(): void
     {
-        $actor = new TokenActor([]);
+        $tokenActor = new TokenActor([]);
 
-        self::assertSame([], $actor->getRoles());
+        self::assertSame([], $tokenActor->getRoles());
     }
 }

@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clarified that `AuthManagerInterface` is the canonical HTTP request-aware API.
 - Clarified that `SecurityActorProviderInterface` is for non-request or application-managed contexts and is not automatically synchronized with the current HTTP request.
 - Updated routing attribute documentation for `sirix/mezzio-routing-attributes:^1.0`.
+- Moved exception classes to the `Sirix\Mezzio\Authentication\Exception` namespace.
+- Made factories use `sirix/container-resolver` for strict container service and configuration resolution instead of silently falling back.
 
 ### Documentation
 - Removed the pre-1.0 warning.

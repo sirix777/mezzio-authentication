@@ -23,20 +23,20 @@ final class OptionalAuthenticateMiddlewareFactoryTest extends TestCase
     #[Test]
     public function transportStorageOverridesDefaultStorage(): void
     {
-        $factory = new Psr7Factory();
-        $request = $factory->createServerRequest('GET', '/')
+        $psr7Factory = new Psr7Factory();
+        $serverRequest = $psr7Factory->createServerRequest('GET', '/')
             ->withHeader('Authorization', 'Bearer token-id')
         ;
-        $response = $factory->createResponse(200);
-        $token = new AuthToken('token-id', 'api', ['userId' => 1]);
+        $response = $psr7Factory->createResponse(200);
+        $authToken = new AuthToken('token-id', 'api', ['userId' => 1]);
         $actor = $this->createStub(ActorInterface::class);
 
         $storage = $this->createMock(TokenStorageInterface::class);
         $storage
             ->expects($this->once())
             ->method('load')
-            ->with('token-id', $request)
-            ->willReturn($token)
+            ->with('token-id', $serverRequest)
+            ->willReturn($authToken)
         ;
 
         $storageProvider = $this->createMock(TokenStorageProviderInterface::class);
@@ -51,7 +51,7 @@ final class OptionalAuthenticateMiddlewareFactoryTest extends TestCase
         $transport
             ->expects($this->once())
             ->method('fetch')
-            ->with($request)
+            ->with($serverRequest)
             ->willReturn('token-id')
         ;
 
@@ -59,8 +59,8 @@ final class OptionalAuthenticateMiddlewareFactoryTest extends TestCase
         $authenticator
             ->expects($this->once())
             ->method('authenticate')
-            ->with($token)
-            ->willReturn(new AuthenticationContext($token, $actor))
+            ->with($authToken)
+            ->willReturn(new AuthenticationContext($authToken, $actor))
         ;
 
         $middleware = (new OptionalAuthenticateMiddlewareFactory())(new ArrayContainer([
@@ -84,6 +84,6 @@ final class OptionalAuthenticateMiddlewareFactoryTest extends TestCase
             ->willReturn($response)
         ;
 
-        self::assertSame($response, $middleware->process($request, $handler));
+        self::assertSame($response, $middleware->process($serverRequest, $handler));
     }
 }

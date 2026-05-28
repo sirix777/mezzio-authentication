@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Sirix\Mezzio\Authentication;
+namespace Sirix\Mezzio\Authentication\Exception;
 
 use RuntimeException;
 
-final class AuthenticationException extends RuntimeException
+final class AlreadyAuthenticatedException extends RuntimeException
 {
     /**
      * @param array<string, string> $headers
      */
     public function __construct(
-        string $message = 'Unauthorized',
+        string $message = 'Forbidden',
         private readonly array $headers = [],
         private readonly ?string $publicMessage = null,
     ) {
@@ -21,7 +21,7 @@ final class AuthenticationException extends RuntimeException
 
     public function getStatusCode(): int
     {
-        return 401;
+        return 403;
     }
 
     /**

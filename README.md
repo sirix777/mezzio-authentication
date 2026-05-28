@@ -159,9 +159,9 @@ $actor->getRoles(); // ['admin', 'editor']
 
 | Middleware | Behavior |
 |-----------|----------|
-| `AuthenticateMiddleware` | Requires authentication, throws `AuthenticationException` (401) |
+| `AuthenticateMiddleware` | Requires authentication, throws `Exception\AuthenticationException` (401) |
 | `OptionalAuthenticateMiddleware` | Attempts authentication, passes through regardless |
-| `GuestOnlyMiddleware` | Allows only guests, throws `AlreadyAuthenticatedException` (403) |
+| `GuestOnlyMiddleware` | Allows only guests, throws `Exception\AlreadyAuthenticatedException` (403) |
 
 ### Attributes
 
@@ -265,12 +265,16 @@ final readonly class QueryParamTransport implements TokenTransportInterface
 
 ## Exceptions
 
-| Exception | HTTP Status |
-|-----------|-------------|
-| `AuthenticationException` | 401 Unauthorized |
-| `AlreadyAuthenticatedException` | 403 Forbidden |
+| Exception | Purpose |
+|-----------|---------|
+| `Exception\AuthenticationException` | 401 Unauthorized response |
+| `Exception\AlreadyAuthenticatedException` | 403 Forbidden response |
+| `Exception\StorageException` | Token storage failure |
+| `Sirix\ContainerResolver\Exception\MissingContainerServiceException` | Required container service is not registered while a factory builds an object |
+| `Sirix\ContainerResolver\Exception\InvalidContainerServiceException` | Container service has an unexpected type |
+| `Sirix\ContainerResolver\Exception\InvalidConfigValueException` | Factory configuration value has an unexpected type or unsupported value |
 
-Both provide `getStatusCode()`, `getHeaders()`, and `getPublicMessage()` for integration with error handling middleware.
+HTTP exceptions provide `getStatusCode()`, `getHeaders()`, and `getPublicMessage()` for integration with error handling middleware. Factory configuration errors are reported by `sirix/container-resolver` exceptions.
 
 ## Design Notes
 

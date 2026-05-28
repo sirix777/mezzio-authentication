@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace SirixTest\Mezzio\Authentication\Factory;
 
-use InvalidArgumentException;
 use LogicException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
+use Sirix\ContainerResolver\Exception\InvalidContainerServiceException;
+use Sirix\ContainerResolver\Exception\MissingContainerServiceException;
 use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
 use Sirix\Mezzio\Authentication\Factory\TokenStorageProviderFactory;
@@ -20,54 +21,54 @@ use stdClass;
 final class TokenStorageProviderFactoryTest extends TestCase
 {
     #[Test]
-    public function fallsBackToNullStorageWhenSessionStorageIsNotRegistered(): void
+    public function throwsWhenDefaultSessionStorageIsNotRegistered(): void
     {
-        $factory = new TokenStorageProviderFactory();
-        $container = new ArrayContainer([
+        $tokenStorageProviderFactory = new TokenStorageProviderFactory();
+        $arrayContainer = new ArrayContainer([
             'config' => ['authentication' => ['default_storage' => 'session']],
             NullTokenStorage::class => new NullTokenStorage(),
         ]);
 
-        $provider = $factory($container);
+        $this->expectException(MissingContainerServiceException::class);
 
-        self::assertInstanceOf(NullTokenStorage::class, $provider->getDefaultStorage());
+        $tokenStorageProviderFactory($arrayContainer);
     }
 
     #[Test]
     public function usesSessionStorageWhenItIsRegistered(): void
     {
-        $factory = new TokenStorageProviderFactory();
-        $sessionStorage = new SessionTokenStorage();
-        $container = new ArrayContainer([
+        $tokenStorageProviderFactory = new TokenStorageProviderFactory();
+        $sessionTokenStorage = new SessionTokenStorage();
+        $arrayContainer = new ArrayContainer([
             'config' => ['authentication' => ['default_storage' => 'session']],
             NullTokenStorage::class => new NullTokenStorage(),
-            SessionTokenStorage::class => $sessionStorage,
+            SessionTokenStorage::class => $sessionTokenStorage,
         ]);
 
-        $provider = $factory($container);
+        $tokenStorageProvider = $tokenStorageProviderFactory($arrayContainer);
 
-        self::assertSame($sessionStorage, $provider->getDefaultStorage());
+        self::assertSame($sessionTokenStorage, $tokenStorageProvider->getDefaultStorage());
     }
 
     #[Test]
     public function registersStoragesFromConfigurationMapping(): void
     {
-        $factory = new TokenStorageProviderFactory();
+        $tokenStorageProviderFactory = new TokenStorageProviderFactory();
         $customStorage = new class implements TokenStorageInterface {
-            public function create(array $payload, ?int $expiresAt = null, ?ServerRequestInterface $request = null): TokenInterface
+            public function create(array $payload, ?int $expiresAt = null, ?ServerRequestInterface $serverRequest = null): TokenInterface
             {
                 throw new LogicException('Not needed for this test.');
             }
 
-            public function load(string $id, ?ServerRequestInterface $request = null): ?TokenInterface
+            public function load(string $id, ?ServerRequestInterface $serverRequest = null): ?TokenInterface
             {
                 return null;
             }
 
-            public function delete(TokenInterface $token, ?ServerRequestInterface $request = null): void {}
+            public function delete(TokenInterface $token, ?ServerRequestInterface $serverRequest = null): void {}
         };
 
-        $container = new ArrayContainer([
+        $arrayContainer = new ArrayContainer([
             'config' => [
                 'authentication' => [
                     'default_storage' => 'redis',
@@ -80,17 +81,17 @@ final class TokenStorageProviderFactoryTest extends TestCase
             'app.storage.redis' => $customStorage,
         ]);
 
-        $provider = $factory($container);
+        $tokenStorageProvider = $tokenStorageProviderFactory($arrayContainer);
 
-        self::assertSame($customStorage, $provider->getDefaultStorage());
-        self::assertSame($customStorage, $provider->getStorage('redis'));
+        self::assertSame($customStorage, $tokenStorageProvider->getDefaultStorage());
+        self::assertSame($customStorage, $tokenStorageProvider->getStorage('redis'));
     }
 
     #[Test]
     public function throwsForMappedServiceWithInvalidType(): void
     {
-        $factory = new TokenStorageProviderFactory();
-        $container = new ArrayContainer([
+        $tokenStorageProviderFactory = new TokenStorageProviderFactory();
+        $arrayContainer = new ArrayContainer([
             'config' => [
                 'authentication' => [
                     'storages' => [
@@ -102,8 +103,28 @@ final class TokenStorageProviderFactoryTest extends TestCase
             'app.storage.broken' => new stdClass(),
         ]);
 
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidContainerServiceException::class);
 
-        $factory($container);
+        $tokenStorageProviderFactory($arrayContainer);
+    }
+
+    #[Test]
+    public function throwsForMappedServiceThatIsNotRegistered(): void
+    {
+        $tokenStorageProviderFactory = new TokenStorageProviderFactory();
+        $arrayContainer = new ArrayContainer([
+            'config' => [
+                'authentication' => [
+                    'storages' => [
+                        'redis' => 'app.storage.redis',
+                    ],
+                ],
+            ],
+            NullTokenStorage::class => new NullTokenStorage(),
+        ]);
+
+        $this->expectException(MissingContainerServiceException::class);
+
+        $tokenStorageProviderFactory($arrayContainer);
     }
 }

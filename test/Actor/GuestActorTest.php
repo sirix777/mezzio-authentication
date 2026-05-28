@@ -14,16 +14,16 @@ final class GuestActorTest extends TestCase
     #[Test]
     public function implementsActorInterface(): void
     {
-        $actor = new GuestActor();
+        $guestActor = new GuestActor();
 
-        self::assertInstanceOf(ActorInterface::class, $actor);
+        self::assertInstanceOf(ActorInterface::class, $guestActor);
     }
 
     #[Test]
     public function returnsGuestRole(): void
     {
-        $actor = new GuestActor();
+        $guestActor = new GuestActor();
 
-        self::assertSame(['guest'], $actor->getRoles());
+        self::assertSame(['guest'], $guestActor->getRoles());
     }
 }

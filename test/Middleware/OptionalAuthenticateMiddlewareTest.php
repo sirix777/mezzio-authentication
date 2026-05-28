@@ -22,18 +22,18 @@ use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
 final class OptionalAuthenticateMiddlewareTest extends TestCase
 {
-    private Psr7Factory $factory;
+    private Psr7Factory $psr7Factory;
 
     protected function setUp(): void
     {
-        $this->factory = new Psr7Factory();
+        $this->psr7Factory = new Psr7Factory();
     }
 
     #[Test]
     public function passesRequestThroughWhenUnauthenticated(): void
     {
         $provider = $this->createStub(AuthActorProviderInterface::class);
-        $middleware = new OptionalAuthenticateMiddleware(
+        $optionalAuthenticateMiddleware = new OptionalAuthenticateMiddleware(
             new TokenAuthenticator($provider),
             new TokenStorageProvider('null', [
                 'null' => new NullTokenStorage(),
@@ -42,14 +42,14 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
             'null',
         );
 
-        $response = $middleware->process(
-            $this->factory->createServerRequest('GET', '/'),
-            new class($this->factory) implements RequestHandlerInterface {
-                public function __construct(private readonly Psr7Factory $factory) {}
+        $response = $optionalAuthenticateMiddleware->process(
+            $this->psr7Factory->createServerRequest('GET', '/'),
+            new class($this->psr7Factory) implements RequestHandlerInterface {
+                public function __construct(private readonly Psr7Factory $psr7Factory) {}
 
                 public function handle(ServerRequestInterface $request): ResponseInterface
                 {
-                    return $this->factory->createResponse(200);
+                    return $this->psr7Factory->createResponse(200);
                 }
             },
         );
@@ -61,7 +61,7 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
     public function setsAuthenticationAttributesOnRequest(): void
     {
         $provider = $this->createStub(AuthActorProviderInterface::class);
-        $middleware = new OptionalAuthenticateMiddleware(
+        $optionalAuthenticateMiddleware = new OptionalAuthenticateMiddleware(
             new TokenAuthenticator($provider),
             new TokenStorageProvider('null', [
                 'null' => new NullTokenStorage(),
@@ -70,24 +70,24 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
             'null',
         );
 
-        $handler = new class($this->factory) implements RequestHandlerInterface {
+        $handler = new class($this->psr7Factory) implements RequestHandlerInterface {
             /**
              * @var array<string, mixed>
              */
             public array $attributes = [];
 
-            public function __construct(private readonly Psr7Factory $factory) {}
+            public function __construct(private readonly Psr7Factory $psr7Factory) {}
 
             public function handle(ServerRequestInterface $request): ResponseInterface
             {
                 $this->attributes = $request->getAttributes();
 
-                return $this->factory->createResponse(200);
+                return $this->psr7Factory->createResponse(200);
             }
         };
 
-        $middleware->process(
-            $this->factory->createServerRequest('GET', '/'),
+        $optionalAuthenticateMiddleware->process(
+            $this->psr7Factory->createServerRequest('GET', '/'),
             $handler,
         );
 
@@ -104,7 +104,7 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
     {
         $provider = $this->createStub(AuthActorProviderInterface::class);
 
-        $middleware = new OptionalAuthenticateMiddleware(
+        $optionalAuthenticateMiddleware = new OptionalAuthenticateMiddleware(
             new TokenAuthenticator($provider),
             new TokenStorageProvider('session', [
                 'session' => new SessionTokenStorage(),
@@ -113,16 +113,16 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
             'session',
         );
 
-        $response = $middleware->process(
-            $this->factory
+        $response = $optionalAuthenticateMiddleware->process(
+            $this->psr7Factory
                 ->createServerRequest('GET', '/')
                 ->withHeader('Authorization', 'Bearer broken-token'),
-            new class($this->factory) implements RequestHandlerInterface {
-                public function __construct(private readonly Psr7Factory $factory) {}
+            new class($this->psr7Factory) implements RequestHandlerInterface {
+                public function __construct(private readonly Psr7Factory $psr7Factory) {}
 
                 public function handle(ServerRequestInterface $request): ResponseInterface
                 {
-                    return $this->factory->createResponse(200);
+                    return $this->psr7Factory->createResponse(200);
                 }
             },
         );

@@ -17,9 +17,9 @@ final readonly class BearerTokenTransport implements TokenTransportInterface
 {
     public function __construct(private string $header = 'Authorization', private string $scheme = 'Bearer') {}
 
-    public function fetch(ServerRequestInterface $request): ?string
+    public function fetch(ServerRequestInterface $serverRequest): ?string
     {
-        $header = trim($request->getHeaderLine($this->header));
+        $header = trim($serverRequest->getHeaderLine($this->header));
         if ('' === $header) {
             return null;
         }

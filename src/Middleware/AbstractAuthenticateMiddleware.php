@@ -11,7 +11,7 @@ use Sirix\Mezzio\Authentication\Contract\AuthContextInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthenticatorInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
-use Sirix\Mezzio\Authentication\Storage\StorageException;
+use Sirix\Mezzio\Authentication\Exception\StorageException;
 
 use function is_string;
 
@@ -19,38 +19,38 @@ abstract readonly class AbstractAuthenticateMiddleware implements MiddlewareInte
 {
     public function __construct(
         private AuthenticatorInterface $authenticator,
-        private TokenStorageProviderInterface $storageProvider,
-        private TokenTransportInterface $transport,
+        private TokenStorageProviderInterface $tokenStorageProvider,
+        private TokenTransportInterface $tokenTransport,
         private string $storage,
     ) {}
 
     /**
      * @return array{0: ServerRequestInterface, 1: AuthContextInterface}
      */
-    final protected function authenticate(ServerRequestInterface $request): array
+    final protected function authenticate(ServerRequestInterface $serverRequest): array
     {
-        $tokenId = $this->transport->fetch($request);
+        $tokenId = $this->tokenTransport->fetch($serverRequest);
         $token = null;
 
         if (is_string($tokenId) && '' !== $tokenId) {
             try {
-                $token = $this->storageProvider
+                $token = $this->tokenStorageProvider
                     ->getStorage($this->storage)
-                    ->load($tokenId, $request)
+                    ->load($tokenId, $serverRequest)
                 ;
             } catch (StorageException) {
                 $token = null;
             }
         }
 
-        $context = $this->authenticator->authenticate($token);
+        $authContext = $this->authenticator->authenticate($token);
 
         return [
-            $request
-                ->withAttribute(AuthenticationAttributes::Context->value, $context)
-                ->withAttribute(AuthenticationAttributes::Token->value, $context->token())
-                ->withAttribute(AuthenticationAttributes::Actor->value, $context->actor()),
-            $context,
+            $serverRequest
+                ->withAttribute(AuthenticationAttributes::Context->value, $authContext)
+                ->withAttribute(AuthenticationAttributes::Token->value, $authContext->token())
+                ->withAttribute(AuthenticationAttributes::Actor->value, $authContext->actor()),
+            $authContext,
         ];
     }
 }

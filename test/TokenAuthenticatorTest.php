@@ -19,11 +19,11 @@ final class TokenAuthenticatorTest extends TestCase
     {
         $actorProvider = $this->createStub(AuthActorProviderInterface::class);
 
-        $authenticator = new TokenAuthenticator($actorProvider);
-        $result = $authenticator->authenticate(null);
+        $tokenAuthenticator = new TokenAuthenticator($actorProvider);
+        $authContext = $tokenAuthenticator->authenticate(null);
 
-        self::assertInstanceOf(AuthContextInterface::class, $result);
-        self::assertTrue($result->guest());
+        self::assertInstanceOf(AuthContextInterface::class, $authContext);
+        self::assertTrue($authContext->guest());
     }
 
     #[Test]
@@ -40,11 +40,11 @@ final class TokenAuthenticatorTest extends TestCase
             ->willReturn($actor)
         ;
 
-        $authenticator = new TokenAuthenticator($actorProvider);
-        $result = $authenticator->authenticate($token);
+        $tokenAuthenticator = new TokenAuthenticator($actorProvider);
+        $authContext = $tokenAuthenticator->authenticate($token);
 
-        self::assertTrue($result->check());
-        self::assertSame($token, $result->token());
-        self::assertSame($actor, $result->actor());
+        self::assertTrue($authContext->check());
+        self::assertSame($token, $authContext->token());
+        self::assertSame($actor, $authContext->actor());
     }
 }

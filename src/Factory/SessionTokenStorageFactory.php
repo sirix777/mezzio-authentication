@@ -4,29 +4,20 @@ declare(strict_types=1);
 
 namespace Sirix\Mezzio\Authentication\Factory;
 
-use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use Sirix\ContainerResolver\ConfigReader;
+use Sirix\ContainerResolver\ContainerResolver;
 use Sirix\Mezzio\Authentication\Storage\SessionTokenStorage;
 
 final class SessionTokenStorageFactory
 {
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     */
     public function __invoke(ContainerInterface $container): SessionTokenStorage
     {
-        $config = $container->has('config')
-            ? $container->get('config')
-            : [];
-
-        $authConfig = $config['authentication'] ?? [];
-        $sessionConfig = $authConfig['session'] ?? [];
+        $configReader = ConfigReader::fromContainer(ContainerResolver::forFactory($container, self::class));
 
         return new SessionTokenStorage(
             storage: 'session',
-            prefix: (string) ($sessionConfig['prefix'] ?? '_authentication.tokens.'),
+            prefix: $configReader->nonEmptyString('authentication.session.prefix', '_authentication.tokens.'),
         );
     }
 }

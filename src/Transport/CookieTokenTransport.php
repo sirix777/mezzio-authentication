@@ -25,9 +25,9 @@ final readonly class CookieTokenTransport implements TokenTransportInterface
         private string $sameSite = 'Lax',
     ) {}
 
-    public function fetch(ServerRequestInterface $request): ?string
+    public function fetch(ServerRequestInterface $serverRequest): ?string
     {
-        $cookies = $request->getCookieParams();
+        $cookies = $serverRequest->getCookieParams();
         $token = $cookies[$this->name] ?? null;
 
         return is_string($token) && '' !== $token ? $token : null;

@@ -17,29 +17,29 @@ final class AuthenticatedTest extends TestCase
     #[Test]
     public function implementsRouteAttributeModifierInterface(): void
     {
-        $attribute = new Authenticated();
-        self::assertInstanceOf(RouteAttributeModifierInterface::class, $attribute);
+        $authenticated = new Authenticated();
+        self::assertInstanceOf(RouteAttributeModifierInterface::class, $authenticated);
     }
 
     #[Test]
     public function returnsAuthenticateMiddleware(): void
     {
-        $attribute = new Authenticated();
-        self::assertSame([AuthenticateMiddleware::class], $attribute->getMiddleware());
+        $authenticated = new Authenticated();
+        self::assertSame([AuthenticateMiddleware::class], $authenticated->getMiddleware());
     }
 
     #[Test]
     public function returnsEmptyDefaults(): void
     {
-        $attribute = new Authenticated();
-        self::assertSame([], $attribute->getDefaults());
+        $authenticated = new Authenticated();
+        self::assertSame([], $authenticated->getDefaults());
     }
 
     #[Test]
     public function isAttribute(): void
     {
-        $reflection = new ReflectionClass(Authenticated::class);
-        $attributes = $reflection->getAttributes();
+        $reflectionClass = new ReflectionClass(Authenticated::class);
+        $attributes = $reflectionClass->getAttributes();
 
         self::assertCount(1, $attributes);
         self::assertSame(Attribute::class, $attributes[0]->getName());

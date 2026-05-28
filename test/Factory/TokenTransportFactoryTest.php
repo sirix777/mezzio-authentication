@@ -20,12 +20,12 @@ final class TokenTransportFactoryTest extends TestCase
             'config' => [],
         ]));
 
-        $request = (new Psr7Factory())
+        $serverRequest = (new Psr7Factory())
             ->createServerRequest('GET', '/')
             ->withHeader('Authorization', 'Bearer bearer-token')
         ;
 
-        self::assertSame('bearer-token', $transport->fetch($request));
+        self::assertSame('bearer-token', $transport->fetch($serverRequest));
     }
 
     #[Test]
@@ -49,16 +49,16 @@ final class TokenTransportFactoryTest extends TestCase
             ],
         ]));
 
-        $factory = new Psr7Factory();
-        $request = $factory
+        $psr7Factory = new Psr7Factory();
+        $serverRequest = $psr7Factory
             ->createServerRequest('GET', '/')
             ->withCookieParams(['app_auth' => 'cookie-token'])
         ;
 
-        self::assertSame('cookie-token', $transport->fetch($request));
+        self::assertSame('cookie-token', $transport->fetch($serverRequest));
 
         $response = $transport->attach(
-            $factory->createResponse(),
+            $psr7Factory->createResponse(),
             new AuthToken('attached-token', 'session', [], 1_800_000_000),
         );
 

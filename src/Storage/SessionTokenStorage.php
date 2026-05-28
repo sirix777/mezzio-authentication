@@ -8,6 +8,7 @@ use Mezzio\Session\SessionInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
+use Sirix\Mezzio\Authentication\Exception\StorageException;
 use Sirix\Mezzio\Authentication\Token\AuthToken;
 
 use function bin2hex;
@@ -20,28 +21,28 @@ final readonly class SessionTokenStorage implements TokenStorageInterface
 {
     public function __construct(private string $storage = 'session', private string $prefix = '_authentication.tokens.') {}
 
-    public function create(array $payload, ?int $expiresAt = null, ?ServerRequestInterface $request = null): TokenInterface
+    public function create(array $payload, ?int $expiresAt = null, ?ServerRequestInterface $serverRequest = null): TokenInterface
     {
-        $session = $this->session($request);
+        $session = $this->session($serverRequest);
 
-        $token = new AuthToken(
+        $authToken = new AuthToken(
             bin2hex(random_bytes(16)),
             $this->storage,
             $payload,
             $expiresAt,
         );
 
-        $session->set($this->key($token->getId()), [
+        $session->set($this->key($authToken->getId()), [
             'payload' => $payload,
             'expires_at' => $expiresAt,
         ]);
 
-        return $token;
+        return $authToken;
     }
 
-    public function load(string $id, ?ServerRequestInterface $request = null): ?TokenInterface
+    public function load(string $id, ?ServerRequestInterface $serverRequest = null): ?TokenInterface
     {
-        $session = $this->session($request);
+        $session = $this->session($serverRequest);
 
         $record = $session->get($this->key($id));
         if (! is_array($record)) {
@@ -63,15 +64,15 @@ final readonly class SessionTokenStorage implements TokenStorageInterface
         );
     }
 
-    public function delete(TokenInterface $token, ?ServerRequestInterface $request = null): void
+    public function delete(TokenInterface $token, ?ServerRequestInterface $serverRequest = null): void
     {
-        $this->session($request)->unset($this->key($token->getId()));
+        $this->session($serverRequest)->unset($this->key($token->getId()));
     }
 
-    private function session(?ServerRequestInterface $request): SessionInterface
+    private function session(?ServerRequestInterface $serverRequest): SessionInterface
     {
-        $session = $request?->getAttribute(SessionInterface::class)
-            ?? $request?->getAttribute('session');
+        $session = $serverRequest?->getAttribute(SessionInterface::class)
+            ?? $serverRequest?->getAttribute('session');
 
         if (! $session instanceof SessionInterface) {
             throw new StorageException(

@@ -24,6 +24,7 @@
         "psr/http-message": "^1.1 || ^2.0",
         "psr/http-server-handler": "^1.0",
         "psr/http-server-middleware": "^1.0",
+        "sirix/container-resolver": "^0.1.0",
         "sirix/mezzio-routing-contracts": "^1.0"
     },
     "require-dev": {
@@ -82,6 +83,7 @@
         "normalize": "@composer bin composer-normalize normalize --diff ../../composer.json",
         "phpstan": "php tools/phpstan/vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=2G",
         "rector": "php tools/rector/vendor/bin/rector process --dry-run --memory-limit=2G",
+        "rector-fix": "php tools/rector/vendor/bin/rector process --memory-limit=2G",
         "test": "php vendor/bin/phpunit --colors=always --testdox"
     }
 }

@@ -17,12 +17,12 @@ final class ContextActorProviderTest extends TestCase
     #[Test]
     public function implementsSecurityActorProviderInterface(): void
     {
-        $provider = new ContextActorProvider(
+        $contextActorProvider = new ContextActorProvider(
             $this->createStub(AuthContextInterface::class),
             new GuestActor(),
         );
 
-        self::assertInstanceOf(SecurityActorProviderInterface::class, $provider);
+        self::assertInstanceOf(SecurityActorProviderInterface::class, $contextActorProvider);
     }
 
     #[Test]
@@ -37,9 +37,9 @@ final class ContextActorProviderTest extends TestCase
             ->willReturn($actor)
         ;
 
-        $provider = new ContextActorProvider($context, new GuestActor());
+        $contextActorProvider = new ContextActorProvider($context, new GuestActor());
 
-        self::assertSame($actor, $provider->getActor());
+        self::assertSame($actor, $contextActorProvider->getActor());
     }
 
     #[Test]
@@ -48,9 +48,9 @@ final class ContextActorProviderTest extends TestCase
         $context = $this->createStub(AuthContextInterface::class);
         $context->method('actor')->willReturn(null);
 
-        $guest = new GuestActor();
-        $provider = new ContextActorProvider($context, $guest);
+        $guestActor = new GuestActor();
+        $contextActorProvider = new ContextActorProvider($context, $guestActor);
 
-        self::assertSame($guest, $provider->getActor());
+        self::assertSame($guestActor, $contextActorProvider->getActor());
     }
 }
