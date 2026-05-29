@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sirix\Mezzio\Authentication\Factory;
 
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Sirix\ContainerResolver\ContainerResolver;
 use Sirix\Mezzio\Authentication\AuthenticationManager;
@@ -13,6 +14,9 @@ use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
 
 final class AuthManagerFactory
 {
+    /**
+     * @throws ContainerExceptionInterface
+     */
     public function __invoke(ContainerInterface $container): AuthManagerInterface
     {
         $containerResolver = ContainerResolver::forFactory($container, self::class);

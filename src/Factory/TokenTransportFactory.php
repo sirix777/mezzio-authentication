@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sirix\Mezzio\Authentication\Factory;
 
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Sirix\ContainerResolver\ConfigReader;
 use Sirix\ContainerResolver\ContainerResolver;
@@ -13,6 +14,9 @@ use Sirix\Mezzio\Authentication\Transport\CookieTokenTransport;
 
 final class TokenTransportFactory
 {
+    /**
+     * @throws ContainerExceptionInterface
+     */
     public function __invoke(ContainerInterface $container): TokenTransportInterface
     {
         $configReader = ConfigReader::fromContainer(ContainerResolver::forFactory($container, self::class));

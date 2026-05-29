@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sirix\Mezzio\Authentication\Factory;
 
 use Mezzio\Session\SessionInterface;
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Sirix\ContainerResolver\ConfigReader;
 use Sirix\ContainerResolver\ContainerResolver;
@@ -22,6 +23,9 @@ use function is_string;
 
 final class TokenStorageProviderFactory
 {
+    /**
+     * @throws ContainerExceptionInterface
+     */
     public function __invoke(ContainerInterface $container): TokenStorageProviderInterface
     {
         $containerResolver = ContainerResolver::forFactory($container, self::class);

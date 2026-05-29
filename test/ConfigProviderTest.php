@@ -94,7 +94,7 @@ final class ConfigProviderTest extends TestCase
 
         self::assertArrayHasKey(AuthenticateMiddleware::class, $dependencies['factories']);
         self::assertArrayHasKey(OptionalAuthenticateMiddleware::class, $dependencies['factories']);
-        self::assertArrayHasKey(GuestOnlyMiddleware::class, $dependencies['factories']);
+        self::assertArrayHasKey(GuestOnlyMiddleware::class, $dependencies['invokables']);
     }
 
     #[Test]
@@ -107,6 +107,7 @@ final class ConfigProviderTest extends TestCase
         self::assertArrayHasKey(NullActorProvider::class, $dependencies['invokables']);
         self::assertArrayHasKey(NullTokenStorage::class, $dependencies['invokables']);
         self::assertArrayHasKey(BearerTokenTransport::class, $dependencies['invokables']);
+        self::assertArrayHasKey(GuestOnlyMiddleware::class, $dependencies['invokables']);
     }
 
     #[Test]

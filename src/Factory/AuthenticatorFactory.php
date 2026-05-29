@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sirix\Mezzio\Authentication\Factory;
 
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Sirix\ContainerResolver\ContainerResolver;
 use Sirix\Mezzio\Authentication\Contract\AuthActorProviderInterface;
@@ -12,6 +13,9 @@ use Sirix\Mezzio\Authentication\TokenAuthenticator;
 
 final class AuthenticatorFactory
 {
+    /**
+     * @throws ContainerExceptionInterface
+     */
     public function __invoke(ContainerInterface $container): AuthenticatorInterface
     {
         return new TokenAuthenticator(
