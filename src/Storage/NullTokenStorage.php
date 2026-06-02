@@ -16,7 +16,7 @@ final readonly class NullTokenStorage implements TokenStorageInterface
 {
     public function __construct(private string $storage = 'null') {}
 
-    public function create(array $payload, ?int $expiresAt = null, ?ServerRequestInterface $request = null): TokenInterface
+    public function create(array $payload, ?int $expiresAt = null, ?ServerRequestInterface $serverRequest = null): TokenInterface
     {
         return new AuthToken(
             bin2hex(random_bytes(16)),
@@ -26,10 +26,10 @@ final readonly class NullTokenStorage implements TokenStorageInterface
         );
     }
 
-    public function load(string $id, ?ServerRequestInterface $request = null): ?TokenInterface
+    public function load(string $id, ?ServerRequestInterface $serverRequest = null): ?TokenInterface
     {
         return null;
     }
 
-    public function delete(TokenInterface $token, ?ServerRequestInterface $request = null): void {}
+    public function delete(TokenInterface $token, ?ServerRequestInterface $serverRequest = null): void {}
 }

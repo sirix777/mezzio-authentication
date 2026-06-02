@@ -22,12 +22,12 @@ final class AuthenticationContextTest extends TestCase
     #[Test]
     public function startsAsGuest(): void
     {
-        $context = new AuthenticationContext();
+        $authenticationContext = new AuthenticationContext();
 
-        self::assertTrue($context->guest());
-        self::assertFalse($context->check());
-        self::assertNull($context->token());
-        self::assertNull($context->actor());
+        self::assertTrue($authenticationContext->guest());
+        self::assertFalse($authenticationContext->check());
+        self::assertNull($authenticationContext->token());
+        self::assertNull($authenticationContext->actor());
     }
 
     #[Test]
@@ -36,12 +36,12 @@ final class AuthenticationContextTest extends TestCase
         $token = $this->createStub(TokenInterface::class);
         $actor = $this->createStub(ActorInterface::class);
 
-        $context = new AuthenticationContext($token, $actor);
+        $authenticationContext = new AuthenticationContext($token, $actor);
 
-        self::assertTrue($context->check());
-        self::assertFalse($context->guest());
-        self::assertSame($token, $context->token());
-        self::assertSame($actor, $context->actor());
+        self::assertTrue($authenticationContext->check());
+        self::assertFalse($authenticationContext->guest());
+        self::assertSame($token, $authenticationContext->token());
+        self::assertSame($actor, $authenticationContext->actor());
     }
 
     #[Test]
@@ -54,8 +54,8 @@ final class AuthenticationContextTest extends TestCase
     public function checkReturnsTrueWhenTokenSet(): void
     {
         $token = $this->createStub(TokenInterface::class);
-        $context = new AuthenticationContext($token);
+        $authenticationContext = new AuthenticationContext($token);
 
-        self::assertTrue($context->check());
+        self::assertTrue($authenticationContext->check());
     }
 }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Sirix\Mezzio\Authentication\Storage;
+namespace Sirix\Mezzio\Authentication\Exception;
 
 use RuntimeException;
 use Throwable;

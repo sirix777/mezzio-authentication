@@ -12,23 +12,23 @@ use Sirix\Mezzio\Authentication\Storage\NullTokenStorage;
 
 final class NullTokenStorageTest extends TestCase
 {
-    private NullTokenStorage $storage;
+    private NullTokenStorage $nullTokenStorage;
 
     protected function setUp(): void
     {
-        $this->storage = new NullTokenStorage();
+        $this->nullTokenStorage = new NullTokenStorage();
     }
 
     #[Test]
     public function implementsTokenStorageInterface(): void
     {
-        self::assertInstanceOf(TokenStorageInterface::class, $this->storage);
+        self::assertInstanceOf(TokenStorageInterface::class, $this->nullTokenStorage);
     }
 
     #[Test]
     public function createReturnsToken(): void
     {
-        $token = $this->storage->create(['userId' => 1]);
+        $token = $this->nullTokenStorage->create(['userId' => 1]);
 
         self::assertInstanceOf(TokenInterface::class, $token);
         self::assertNotEmpty($token->getId());
@@ -40,8 +40,8 @@ final class NullTokenStorageTest extends TestCase
     #[Test]
     public function createWithCustomStorageName(): void
     {
-        $storage = new NullTokenStorage('custom');
-        $token = $storage->create([]);
+        $nullTokenStorage = new NullTokenStorage('custom');
+        $token = $nullTokenStorage->create([]);
 
         self::assertSame('custom', $token->getStorage());
     }
@@ -49,15 +49,15 @@ final class NullTokenStorageTest extends TestCase
     #[Test]
     public function loadAlwaysReturnsNull(): void
     {
-        self::assertNull($this->storage->load('any-id'));
+        self::assertNull($this->nullTokenStorage->load('any-id'));
     }
 
     #[Test]
     public function deleteDoesNothing(): void
     {
-        $token = $this->storage->create([]);
-        $this->storage->delete($token);
+        $token = $this->nullTokenStorage->create([]);
+        $this->nullTokenStorage->delete($token);
 
-        self::assertNull($this->storage->load($token->getId()));
+        self::assertNull($this->nullTokenStorage->load($token->getId()));
     }
 }

@@ -4,46 +4,46 @@ declare(strict_types=1);
 
 namespace SirixTest\Mezzio\Authentication\Middleware;
 
-use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Sirix\Mezzio\Authentication\AlreadyAuthenticatedException;
 use Sirix\Mezzio\Authentication\AuthenticationAttributes;
 use Sirix\Mezzio\Authentication\AuthenticationContext;
 use Sirix\Mezzio\Authentication\Contract\TokenInterface;
+use Sirix\Mezzio\Authentication\Exception\AlreadyAuthenticatedException;
 use Sirix\Mezzio\Authentication\Middleware\GuestOnlyMiddleware;
+use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
 final class GuestOnlyMiddlewareTest extends TestCase
 {
-    private Psr17Factory $factory;
+    private Psr7Factory $psr7Factory;
 
     protected function setUp(): void
     {
-        $this->factory = new Psr17Factory();
+        $this->psr7Factory = new Psr7Factory();
     }
 
     #[Test]
     public function passesWhenUserIsGuest(): void
     {
-        $middleware = new GuestOnlyMiddleware();
-        $context = new AuthenticationContext();
+        $guestOnlyMiddleware = new GuestOnlyMiddleware();
+        $authenticationContext = new AuthenticationContext();
 
-        $request = $this->factory
+        $serverRequest = $this->psr7Factory
             ->createServerRequest('GET', '/')
-            ->withAttribute(AuthenticationAttributes::Context->value, $context)
+            ->withAttribute(AuthenticationAttributes::Context->value, $authenticationContext)
         ;
 
-        $response = $middleware->process(
-            $request,
-            new class($this->factory) implements RequestHandlerInterface {
-                public function __construct(private readonly Psr17Factory $factory) {}
+        $response = $guestOnlyMiddleware->process(
+            $serverRequest,
+            new class($this->psr7Factory) implements RequestHandlerInterface {
+                public function __construct(private readonly Psr7Factory $psr7Factory) {}
 
                 public function handle(ServerRequestInterface $request): ResponseInterface
                 {
-                    return $this->factory->createResponse(200);
+                    return $this->psr7Factory->createResponse(200);
                 }
             },
         );
@@ -54,23 +54,23 @@ final class GuestOnlyMiddlewareTest extends TestCase
     #[Test]
     public function throwsWhenUserIsAuthenticated(): void
     {
-        $middleware = new GuestOnlyMiddleware();
-        $context = new AuthenticationContext($this->createStub(TokenInterface::class));
+        $guestOnlyMiddleware = new GuestOnlyMiddleware();
+        $authenticationContext = new AuthenticationContext($this->createStub(TokenInterface::class));
 
-        $request = $this->factory
+        $serverRequest = $this->psr7Factory
             ->createServerRequest('GET', '/')
-            ->withAttribute(AuthenticationAttributes::Context->value, $context)
+            ->withAttribute(AuthenticationAttributes::Context->value, $authenticationContext)
         ;
 
         $this->expectException(AlreadyAuthenticatedException::class);
-        $middleware->process(
-            $request,
-            new class($this->factory) implements RequestHandlerInterface {
-                public function __construct(private readonly Psr17Factory $factory) {}
+        $guestOnlyMiddleware->process(
+            $serverRequest,
+            new class($this->psr7Factory) implements RequestHandlerInterface {
+                public function __construct(private readonly Psr7Factory $psr7Factory) {}
 
                 public function handle(ServerRequestInterface $request): ResponseInterface
                 {
-                    return $this->factory->createResponse(200);
+                    return $this->psr7Factory->createResponse(200);
                 }
             },
         );
@@ -79,16 +79,16 @@ final class GuestOnlyMiddlewareTest extends TestCase
     #[Test]
     public function passesWhenNoContextAttribute(): void
     {
-        $middleware = new GuestOnlyMiddleware();
+        $guestOnlyMiddleware = new GuestOnlyMiddleware();
 
-        $response = $middleware->process(
-            $this->factory->createServerRequest('GET', '/'),
-            new class($this->factory) implements RequestHandlerInterface {
-                public function __construct(private readonly Psr17Factory $factory) {}
+        $response = $guestOnlyMiddleware->process(
+            $this->psr7Factory->createServerRequest('GET', '/'),
+            new class($this->psr7Factory) implements RequestHandlerInterface {
+                public function __construct(private readonly Psr7Factory $psr7Factory) {}
 
                 public function handle(ServerRequestInterface $request): ResponseInterface
                 {
-                    return $this->factory->createResponse(200);
+                    return $this->psr7Factory->createResponse(200);
                 }
             },
         );

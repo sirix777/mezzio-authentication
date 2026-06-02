@@ -18,32 +18,32 @@ final class GuestOnlyTest extends TestCase
     #[Test]
     public function implementsRouteAttributeModifierInterface(): void
     {
-        $attribute = new GuestOnly();
-        self::assertInstanceOf(RouteAttributeModifierInterface::class, $attribute);
+        $guestOnly = new GuestOnly();
+        self::assertInstanceOf(RouteAttributeModifierInterface::class, $guestOnly);
     }
 
     #[Test]
     public function returnsBothMiddlewares(): void
     {
-        $attribute = new GuestOnly();
+        $guestOnly = new GuestOnly();
         self::assertSame([
             OptionalAuthenticateMiddleware::class,
             GuestOnlyMiddleware::class,
-        ], $attribute->getMiddleware());
+        ], $guestOnly->getMiddleware());
     }
 
     #[Test]
     public function returnsEmptyDefaults(): void
     {
-        $attribute = new GuestOnly();
-        self::assertSame([], $attribute->getDefaults());
+        $guestOnly = new GuestOnly();
+        self::assertSame([], $guestOnly->getDefaults());
     }
 
     #[Test]
     public function isAttribute(): void
     {
-        $reflection = new ReflectionClass(GuestOnly::class);
-        $attributes = $reflection->getAttributes();
+        $reflectionClass = new ReflectionClass(GuestOnly::class);
+        $attributes = $reflectionClass->getAttributes();
 
         self::assertCount(1, $attributes);
         self::assertSame(Attribute::class, $attributes[0]->getName());

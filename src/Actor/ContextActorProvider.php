@@ -10,10 +10,10 @@ use Sirix\Mezzio\Authentication\Contract\SecurityActorProviderInterface;
 
 final readonly class ContextActorProvider implements SecurityActorProviderInterface
 {
-    public function __construct(private AuthContextInterface $context, private ActorInterface $guestActor) {}
+    public function __construct(private AuthContextInterface $authContext, private ActorInterface $guestActor) {}
 
     public function getActor(): ActorInterface
     {
-        return $this->context->actor() ?? $this->guestActor;
+        return $this->authContext->actor() ?? $this->guestActor;
     }
 }

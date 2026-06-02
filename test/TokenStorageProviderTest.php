@@ -16,31 +16,31 @@ final class TokenStorageProviderTest extends TestCase
     public function returnsStorageByName(): void
     {
         $storage = $this->createStub(TokenStorageInterface::class);
-        $provider = new TokenStorageProvider('default', ['default' => $storage]);
+        $tokenStorageProvider = new TokenStorageProvider('default', ['default' => $storage]);
 
-        self::assertSame($storage, $provider->getStorage('default'));
+        self::assertSame($storage, $tokenStorageProvider->getStorage('default'));
     }
 
     #[Test]
     public function getDefaultStorageReturnsConfiguredDefault(): void
     {
         $storage = $this->createStub(TokenStorageInterface::class);
-        $provider = new TokenStorageProvider('session', [
+        $tokenStorageProvider = new TokenStorageProvider('session', [
             'null' => $this->createStub(TokenStorageInterface::class),
             'session' => $storage,
         ]);
 
-        self::assertSame($storage, $provider->getDefaultStorage());
+        self::assertSame($storage, $tokenStorageProvider->getDefaultStorage());
     }
 
     #[Test]
     public function throwsExceptionForUnknownStorage(): void
     {
-        $provider = new TokenStorageProvider('null', [
+        $tokenStorageProvider = new TokenStorageProvider('null', [
             'null' => $this->createStub(TokenStorageInterface::class),
         ]);
 
         $this->expectException(InvalidArgumentException::class);
-        $provider->getStorage('unknown');
+        $tokenStorageProvider->getStorage('unknown');
     }
 }

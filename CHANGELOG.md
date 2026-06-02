@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-06-02
+
+### Added
+- Stable release of the token-based authentication package for Mezzio.
+- Documented `sirix.authentication.context`, `sirix.authentication.token`, and `sirix.authentication.actor` as stable request attribute integration points.
+
+### Changed
+- Updated routing integration dependency to stable `sirix/mezzio-routing-contracts:^1.0`.
+- Removed pre-1.0 Composer stability metadata.
+- Clarified that `AuthManagerInterface` is the canonical HTTP request-aware API.
+- Clarified that `SecurityActorProviderInterface` is for non-request or application-managed contexts and is not automatically synchronized with the current HTTP request.
+- Updated routing attribute documentation for `sirix/mezzio-routing-attributes:^1.0`.
+- Moved exception classes to the `Sirix\Mezzio\Authentication\Exception` namespace.
+- Made factories use `sirix/container-resolver` for strict container service and configuration resolution instead of silently falling back.
+
+### Documentation
+- Removed the pre-1.0 warning.
+- Documented request-bound authentication state, RBAC integration through `sirix.authentication.actor`, session middleware ordering, and cookie transport production recommendations.
+
 ## [0.1.0] - 2026-05-11
 
 ### Added

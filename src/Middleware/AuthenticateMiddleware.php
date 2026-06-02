@@ -7,7 +7,7 @@ namespace Sirix\Mezzio\Authentication\Middleware;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Sirix\Mezzio\Authentication\AuthenticationException;
+use Sirix\Mezzio\Authentication\Exception\AuthenticationException;
 
 final readonly class AuthenticateMiddleware extends AbstractAuthenticateMiddleware
 {

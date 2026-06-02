@@ -15,56 +15,59 @@ use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
 
 final readonly class AuthenticationManager implements AuthManagerInterface
 {
-    public function __construct(private TokenStorageProviderInterface $storageProvider, private TokenTransportInterface $transport) {}
+    public function __construct(
+        private TokenStorageProviderInterface $tokenStorageProvider,
+        private TokenTransportInterface $tokenTransport
+    ) {}
 
     public function login(array $payload, ?string $storage = null, ?int $expiresAt = null): TokenInterface
     {
         return null === $storage
-            ? $this->storageProvider
+            ? $this->tokenStorageProvider
                 ->getDefaultStorage()
                 ->create($payload, $expiresAt)
-            : $this->storageProvider
+            : $this->tokenStorageProvider
                 ->getStorage($storage)
                 ->create($payload, $expiresAt)
         ;
     }
 
-    public function logout(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    public function logout(ServerRequestInterface $serverRequest, ResponseInterface $response): ResponseInterface
     {
-        $token = $this->token($request);
+        $token = $this->token($serverRequest);
         if ($token instanceof TokenInterface) {
-            $this->storageProvider
+            $this->tokenStorageProvider
                 ->getStorage($token->getStorage())
-                ->delete($token, $request)
+                ->delete($token, $serverRequest)
             ;
         }
 
-        return $this->transport->detach($response);
+        return $this->tokenTransport->detach($response);
     }
 
-    public function token(ServerRequestInterface $request): ?TokenInterface
+    public function token(ServerRequestInterface $serverRequest): ?TokenInterface
     {
-        return $this->context($request)->token();
+        return $this->context($serverRequest)->token();
     }
 
-    public function actor(ServerRequestInterface $request): ?ActorInterface
+    public function actor(ServerRequestInterface $serverRequest): ?ActorInterface
     {
-        return $this->context($request)->actor();
+        return $this->context($serverRequest)->actor();
     }
 
-    public function check(ServerRequestInterface $request): bool
+    public function check(ServerRequestInterface $serverRequest): bool
     {
-        return $this->context($request)->check();
+        return $this->context($serverRequest)->check();
     }
 
-    public function guest(ServerRequestInterface $request): bool
+    public function guest(ServerRequestInterface $serverRequest): bool
     {
-        return $this->context($request)->guest();
+        return $this->context($serverRequest)->guest();
     }
 
-    public function context(ServerRequestInterface $request): AuthContextInterface
+    public function context(ServerRequestInterface $serverRequest): AuthContextInterface
     {
-        $context = $request->getAttribute(AuthenticationAttributes::Context->value);
+        $context = $serverRequest->getAttribute(AuthenticationAttributes::Context->value);
 
         return $context instanceof AuthContextInterface
             ? $context

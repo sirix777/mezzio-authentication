@@ -6,7 +6,7 @@ namespace Sirix\Mezzio\Authentication\Factory;
 
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use Sirix\ContainerResolver\ContainerResolver;
 use Sirix\Mezzio\Authentication\Actor\ContextActorProvider;
 use Sirix\Mezzio\Authentication\Actor\GuestActor;
 use Sirix\Mezzio\Authentication\Contract\AuthContextInterface;
@@ -16,13 +16,14 @@ final class SecurityActorProviderFactory
 {
     /**
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function __invoke(ContainerInterface $container): SecurityActorProviderInterface
     {
+        $containerResolver = ContainerResolver::forFactory($container, self::class);
+
         return new ContextActorProvider(
-            $container->get(AuthContextInterface::class),
-            $container->get(GuestActor::class),
+            $containerResolver->get(AuthContextInterface::class),
+            $containerResolver->get(GuestActor::class),
         );
     }
 }

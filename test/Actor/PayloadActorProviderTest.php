@@ -16,9 +16,9 @@ final class PayloadActorProviderTest extends TestCase
     public function extractsRolesFromList(): void
     {
         $token = $this->createToken(['roles' => ['admin', 'editor']]);
-        $provider = new PayloadActorProvider();
+        $payloadActorProvider = new PayloadActorProvider();
 
-        $actor = $provider->getActor($token);
+        $actor = $payloadActorProvider->getActor($token);
 
         self::assertInstanceOf(ActorInterface::class, $actor);
         self::assertSame(['admin', 'editor'], $actor->getRoles());
@@ -28,9 +28,9 @@ final class PayloadActorProviderTest extends TestCase
     public function extractsRolesWithCustomKey(): void
     {
         $token = $this->createToken(['permissions' => ['read', 'write']]);
-        $provider = new PayloadActorProvider('permissions');
+        $payloadActorProvider = new PayloadActorProvider('permissions');
 
-        $actor = $provider->getActor($token);
+        $actor = $payloadActorProvider->getActor($token);
 
         self::assertSame(['read', 'write'], $actor->getRoles());
     }
@@ -39,9 +39,9 @@ final class PayloadActorProviderTest extends TestCase
     public function extractsSingleRole(): void
     {
         $token = $this->createToken(['role' => 'admin']);
-        $provider = new PayloadActorProvider();
+        $payloadActorProvider = new PayloadActorProvider();
 
-        $actor = $provider->getActor($token);
+        $actor = $payloadActorProvider->getActor($token);
 
         self::assertSame(['admin'], $actor->getRoles());
     }
@@ -50,9 +50,9 @@ final class PayloadActorProviderTest extends TestCase
     public function returnsEmptyRolesWhenNonePresent(): void
     {
         $token = $this->createToken([]);
-        $provider = new PayloadActorProvider();
+        $payloadActorProvider = new PayloadActorProvider();
 
-        $actor = $provider->getActor($token);
+        $actor = $payloadActorProvider->getActor($token);
 
         self::assertSame([], $actor->getRoles());
     }
@@ -61,9 +61,9 @@ final class PayloadActorProviderTest extends TestCase
     public function filtersInvalidRoleValues(): void
     {
         $token = $this->createToken(['roles' => ['admin', 123, '', null]]);
-        $provider = new PayloadActorProvider();
+        $payloadActorProvider = new PayloadActorProvider();
 
-        $actor = $provider->getActor($token);
+        $actor = $payloadActorProvider->getActor($token);
 
         self::assertSame(['admin'], $actor->getRoles());
     }
@@ -75,9 +75,9 @@ final class PayloadActorProviderTest extends TestCase
             'roles' => ['admin'],
             'role' => 'editor',
         ]);
-        $provider = new PayloadActorProvider();
+        $payloadActorProvider = new PayloadActorProvider();
 
-        $actor = $provider->getActor($token);
+        $actor = $payloadActorProvider->getActor($token);
 
         self::assertSame(['admin'], $actor->getRoles());
     }

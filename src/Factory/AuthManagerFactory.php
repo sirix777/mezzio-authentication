@@ -6,7 +6,7 @@ namespace Sirix\Mezzio\Authentication\Factory;
 
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use Sirix\ContainerResolver\ContainerResolver;
 use Sirix\Mezzio\Authentication\AuthenticationManager;
 use Sirix\Mezzio\Authentication\Contract\AuthManagerInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
@@ -16,13 +16,14 @@ final class AuthManagerFactory
 {
     /**
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function __invoke(ContainerInterface $container): AuthManagerInterface
     {
+        $containerResolver = ContainerResolver::forFactory($container, self::class);
+
         return new AuthenticationManager(
-            $container->get(TokenStorageProviderInterface::class),
-            $container->get(TokenTransportInterface::class),
+            $containerResolver->get(TokenStorageProviderInterface::class),
+            $containerResolver->get(TokenTransportInterface::class),
         );
     }
 }

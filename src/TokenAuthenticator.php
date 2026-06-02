@@ -11,7 +11,7 @@ use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 
 final readonly class TokenAuthenticator implements AuthenticatorInterface
 {
-    public function __construct(private AuthActorProviderInterface $actorProvider) {}
+    public function __construct(private AuthActorProviderInterface $authActorProvider) {}
 
     public function authenticate(?TokenInterface $token): AuthContextInterface
     {
@@ -21,7 +21,7 @@ final readonly class TokenAuthenticator implements AuthenticatorInterface
 
         return new AuthenticationContext(
             $token,
-            $this->actorProvider->getActor($token),
+            $this->authActorProvider->getActor($token),
         );
     }
 }

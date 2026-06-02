@@ -14,15 +14,15 @@ interface AuthManagerInterface
      */
     public function login(array $payload, ?string $storage = null, ?int $expiresAt = null): TokenInterface;
 
-    public function logout(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface;
+    public function logout(ServerRequestInterface $serverRequest, ResponseInterface $response): ResponseInterface;
 
-    public function token(ServerRequestInterface $request): ?TokenInterface;
+    public function token(ServerRequestInterface $serverRequest): ?TokenInterface;
 
-    public function actor(ServerRequestInterface $request): ?ActorInterface;
+    public function actor(ServerRequestInterface $serverRequest): ?ActorInterface;
 
-    public function check(ServerRequestInterface $request): bool;
+    public function check(ServerRequestInterface $serverRequest): bool;
 
-    public function guest(ServerRequestInterface $request): bool;
+    public function guest(ServerRequestInterface $serverRequest): bool;
 
-    public function context(ServerRequestInterface $request): AuthContextInterface;
+    public function context(ServerRequestInterface $serverRequest): AuthContextInterface;
 }

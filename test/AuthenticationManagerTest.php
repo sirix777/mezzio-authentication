@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace SirixTest\Mezzio\Authentication;
 
-use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
@@ -17,30 +16,31 @@ use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
+use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
 final class AuthenticationManagerTest extends TestCase
 {
-    private Psr17Factory $factory;
+    private Psr7Factory $psr7Factory;
 
     protected function setUp(): void
     {
-        $this->factory = new Psr17Factory();
+        $this->psr7Factory = new Psr7Factory();
     }
 
     #[Test]
     public function contextFallsBackToGuestWhenRequestHasNoAuthAttributes(): void
     {
-        $manager = new AuthenticationManager(
+        $authenticationManager = new AuthenticationManager(
             $this->createStub(TokenStorageProviderInterface::class),
             $this->createStub(TokenTransportInterface::class),
         );
 
-        $request = $this->factory->createServerRequest('GET', '/');
+        $serverRequest = $this->psr7Factory->createServerRequest('GET', '/');
 
-        self::assertTrue($manager->guest($request));
-        self::assertFalse($manager->check($request));
-        self::assertNull($manager->token($request));
-        self::assertNull($manager->actor($request));
+        self::assertTrue($authenticationManager->guest($serverRequest));
+        self::assertFalse($authenticationManager->check($serverRequest));
+        self::assertNull($authenticationManager->token($serverRequest));
+        self::assertNull($authenticationManager->actor($serverRequest));
     }
 
     #[Test]
@@ -49,12 +49,12 @@ final class AuthenticationManagerTest extends TestCase
         $token = $this->createStub(TokenInterface::class);
         $actor = $this->createStub(ActorInterface::class);
 
-        $manager = new AuthenticationManager(
+        $authenticationManager = new AuthenticationManager(
             $this->createStub(TokenStorageProviderInterface::class),
             $this->createStub(TokenTransportInterface::class),
         );
 
-        $request = $this->factory
+        $serverRequest = $this->psr7Factory
             ->createServerRequest('GET', '/')
             ->withAttribute(
                 AuthenticationAttributes::Context->value,
@@ -62,10 +62,10 @@ final class AuthenticationManagerTest extends TestCase
             )
         ;
 
-        self::assertTrue($manager->check($request));
-        self::assertFalse($manager->guest($request));
-        self::assertSame($token, $manager->token($request));
-        self::assertSame($actor, $manager->actor($request));
+        self::assertTrue($authenticationManager->check($serverRequest));
+        self::assertFalse($authenticationManager->guest($serverRequest));
+        self::assertSame($token, $authenticationManager->token($serverRequest));
+        self::assertSame($actor, $authenticationManager->actor($serverRequest));
     }
 
     #[Test]
@@ -89,7 +89,7 @@ final class AuthenticationManagerTest extends TestCase
             ->willReturn($storage)
         ;
 
-        $response = $this->factory->createResponse(204);
+        $response = $this->psr7Factory->createResponse(204);
         $detached = $this->createMock(ResponseInterface::class);
 
         $transport = $this->createMock(TokenTransportInterface::class);
@@ -100,9 +100,9 @@ final class AuthenticationManagerTest extends TestCase
             ->willReturn($detached)
         ;
 
-        $manager = new AuthenticationManager($storageProvider, $transport);
+        $authenticationManager = new AuthenticationManager($storageProvider, $transport);
 
-        $request = $this->factory
+        $serverRequest = $this->psr7Factory
             ->createServerRequest('GET', '/')
             ->withAttribute(
                 AuthenticationAttributes::Context->value,
@@ -110,6 +110,6 @@ final class AuthenticationManagerTest extends TestCase
             )
         ;
 
-        self::assertSame($detached, $manager->logout($request, $response));
+        self::assertSame($detached, $authenticationManager->logout($serverRequest, $response));
     }
 }

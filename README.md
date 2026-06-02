@@ -2,7 +2,9 @@
 
 Token-based authentication package for Mezzio framework with optional attribute support.
 
-> **Pre-1.0 package:** Not yet production-ready. Public API and configuration may change with breaking changes before `1.0.0`.
+## Stability
+
+The `1.x` line treats the public contracts, middleware behavior, and request attribute names documented below as stable integration points.
 
 ## Installation
 
@@ -79,7 +81,7 @@ $app->get('/api/me', [
 **With `sirix/mezzio-routing-attributes` (optional):**
 
 ```bash
-composer require sirix/mezzio-routing-attributes
+composer require "sirix/mezzio-routing-attributes:^1.0"
 ```
 
 ```php
@@ -101,17 +103,21 @@ final class ProfileHandler implements RequestHandlerInterface
 
 ### AuthManager
 
-Main entry point for authentication operations:
+Main HTTP-facing entry point for authentication operations. Current request authentication state is read from the provided `ServerRequestInterface`; it is not stored in a mutable singleton service.
 
 ```php
 use Sirix\Mezzio\Authentication\Contract\AuthManagerInterface;
 
 $manager->login(['userId' => 1, 'roles' => ['admin']]);
+$manager->context($request); // AuthContextInterface from request attributes
 $manager->check($request);  // true/false based on request auth context
 $manager->guest($request);  // true/false based on request auth context
 $manager->actor($request);  // ActorInterface from request auth context
+$manager->token($request);  // TokenInterface from request auth context
 $response = $manager->logout($request, $response); // detaches token from transport
 ```
+
+For HTTP handlers and middleware, prefer `AuthManagerInterface::actor($request)` or the documented request attributes. Do not resolve a "current user" singleton from the container for per-request authorization.
 
 ### Token Storage
 
@@ -147,13 +153,15 @@ $actor->getRoles(); // ['admin', 'editor']
 - `ContextActorProvider` — resolves actor from authentication context.
 - `GuestActor` — default guest actor with role `guest`.
 
+`SecurityActorProviderInterface` is intended for non-request or application-managed security contexts. Its default `ContextActorProvider` reads from the injected `AuthContextInterface` service and is not automatically synchronized with the current HTTP request. It is not a replacement for `AuthManagerInterface::actor($request)` in HTTP code.
+
 ### Middleware
 
 | Middleware | Behavior |
 |-----------|----------|
-| `AuthenticateMiddleware` | Requires authentication, throws `AuthenticationException` (401) |
+| `AuthenticateMiddleware` | Requires authentication, throws `Exception\AuthenticationException` (401) |
 | `OptionalAuthenticateMiddleware` | Attempts authentication, passes through regardless |
-| `GuestOnlyMiddleware` | Allows only guests, throws `AlreadyAuthenticatedException` (403) |
+| `GuestOnlyMiddleware` | Allows only guests, throws `Exception\AlreadyAuthenticatedException` (403) |
 
 ### Attributes
 
@@ -166,7 +174,7 @@ When `sirix/mezzio-routing-attributes` is installed, attributes auto-inject midd
 
 ## Request Attributes
 
-After authentication middleware processes a request, these attributes are available:
+After `AuthenticateMiddleware` or `OptionalAuthenticateMiddleware` processes a request, these stable attributes are available:
 
 ```php
 use Sirix\Mezzio\Authentication\AuthenticationAttributes;
@@ -176,10 +184,34 @@ $token   = $request->getAttribute(AuthenticationAttributes::Token->value);
 $actor   = $request->getAttribute(AuthenticationAttributes::Actor->value);
 ```
 
+Stable attribute names:
+
+```php
+'sirix.authentication.context'
+'sirix.authentication.token'
+'sirix.authentication.actor'
+```
+
+These attributes are the package's current-request state boundary and are safe for long-running workers because they live on the PSR-7 request instance.
+
+### RBAC Integration
+
+`sirix/mezzio-rbac` can authorize the current request by reading the actor from:
+
+```php
+'sirix.authentication.actor'
+```
+
+The authentication package does not depend on RBAC. The integration contract is structural: the actor exposes `getRoles(): array`.
+
 `SessionTokenStorage` reads session from request attributes in this order:
 
 1. `Mezzio\Session\SessionInterface::class`
 2. `'session'`
+
+When using session storage, `Mezzio\Session\SessionMiddleware` must run before authentication middleware.
+
+For cookie transport in production, use `secure: true` over HTTPS, keep `http_only: true`, and choose a `same_site` policy appropriate for your application flow.
 
 ## Extensibility
 
@@ -233,12 +265,16 @@ final readonly class QueryParamTransport implements TokenTransportInterface
 
 ## Exceptions
 
-| Exception | HTTP Status |
-|-----------|-------------|
-| `AuthenticationException` | 401 Unauthorized |
-| `AlreadyAuthenticatedException` | 403 Forbidden |
+| Exception | Purpose |
+|-----------|---------|
+| `Exception\AuthenticationException` | 401 Unauthorized response |
+| `Exception\AlreadyAuthenticatedException` | 403 Forbidden response |
+| `Exception\StorageException` | Token storage failure |
+| `Sirix\ContainerResolver\Exception\MissingContainerServiceException` | Required container service is not registered while a factory builds an object |
+| `Sirix\ContainerResolver\Exception\InvalidContainerServiceException` | Container service has an unexpected type |
+| `Sirix\ContainerResolver\Exception\InvalidConfigValueException` | Factory configuration value has an unexpected type or unsupported value |
 
-Both provide `getStatusCode()`, `getHeaders()`, and `getPublicMessage()` for integration with error handling middleware.
+HTTP exceptions provide `getStatusCode()`, `getHeaders()`, and `getPublicMessage()` for integration with error handling middleware. Factory configuration errors are reported by `sirix/container-resolver` exceptions.
 
 ## Design Notes
 
