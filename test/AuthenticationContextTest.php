@@ -53,7 +53,7 @@ final class AuthenticationContextTest extends TestCase
     #[Test]
     public function checkReturnsTrueWhenTokenSet(): void
     {
-        $token = $this->createStub(TokenInterface::class);
+        $token                 = $this->createStub(TokenInterface::class);
         $authenticationContext = new AuthenticationContext($token);
 
         self::assertTrue($authenticationContext->check());

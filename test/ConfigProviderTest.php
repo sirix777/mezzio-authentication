@@ -30,7 +30,7 @@ final class ConfigProviderTest extends TestCase
     public function returnsDependenciesArray(): void
     {
         $configProvider = new ConfigProvider();
-        $config = $configProvider();
+        $config         = $configProvider();
 
         self::assertArrayHasKey('dependencies', $config);
         self::assertArrayHasKey('factories', $config['dependencies']);
@@ -42,7 +42,7 @@ final class ConfigProviderTest extends TestCase
     public function registersAuthManagerFactory(): void
     {
         $configProvider = new ConfigProvider();
-        $dependencies = $configProvider->getDependencies();
+        $dependencies   = $configProvider->getDependencies();
 
         self::assertArrayHasKey(AuthManagerInterface::class, $dependencies['factories']);
     }
@@ -51,7 +51,7 @@ final class ConfigProviderTest extends TestCase
     public function registersAuthenticatorFactory(): void
     {
         $configProvider = new ConfigProvider();
-        $dependencies = $configProvider->getDependencies();
+        $dependencies   = $configProvider->getDependencies();
 
         self::assertArrayHasKey(AuthenticatorInterface::class, $dependencies['factories']);
     }
@@ -60,7 +60,7 @@ final class ConfigProviderTest extends TestCase
     public function registersActorProviderFactories(): void
     {
         $configProvider = new ConfigProvider();
-        $dependencies = $configProvider->getDependencies();
+        $dependencies   = $configProvider->getDependencies();
 
         self::assertArrayHasKey(AuthActorProviderInterface::class, $dependencies['factories']);
         self::assertArrayHasKey(SecurityActorProviderInterface::class, $dependencies['factories']);
@@ -71,7 +71,7 @@ final class ConfigProviderTest extends TestCase
     public function registersTokenStorageProviderFactory(): void
     {
         $configProvider = new ConfigProvider();
-        $dependencies = $configProvider->getDependencies();
+        $dependencies   = $configProvider->getDependencies();
 
         self::assertArrayHasKey(TokenStorageProviderInterface::class, $dependencies['factories']);
         self::assertArrayHasKey(SessionTokenStorage::class, $dependencies['factories']);
@@ -81,7 +81,7 @@ final class ConfigProviderTest extends TestCase
     public function registersTokenTransportFactory(): void
     {
         $configProvider = new ConfigProvider();
-        $dependencies = $configProvider->getDependencies();
+        $dependencies   = $configProvider->getDependencies();
 
         self::assertArrayHasKey(TokenTransportInterface::class, $dependencies['factories']);
     }
@@ -90,7 +90,7 @@ final class ConfigProviderTest extends TestCase
     public function registersMiddlewareFactories(): void
     {
         $configProvider = new ConfigProvider();
-        $dependencies = $configProvider->getDependencies();
+        $dependencies   = $configProvider->getDependencies();
 
         self::assertArrayHasKey(AuthenticateMiddleware::class, $dependencies['factories']);
         self::assertArrayHasKey(OptionalAuthenticateMiddleware::class, $dependencies['factories']);
@@ -101,7 +101,7 @@ final class ConfigProviderTest extends TestCase
     public function registersInvokables(): void
     {
         $configProvider = new ConfigProvider();
-        $dependencies = $configProvider->getDependencies();
+        $dependencies   = $configProvider->getDependencies();
 
         self::assertArrayHasKey(GuestActor::class, $dependencies['invokables']);
         self::assertArrayHasKey(NullActorProvider::class, $dependencies['invokables']);
@@ -114,7 +114,7 @@ final class ConfigProviderTest extends TestCase
     public function registersAliases(): void
     {
         $configProvider = new ConfigProvider();
-        $dependencies = $configProvider->getDependencies();
+        $dependencies   = $configProvider->getDependencies();
 
         self::assertArrayHasKey(AuthContextInterface::class, $dependencies['aliases']);
     }

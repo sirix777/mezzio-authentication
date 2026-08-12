@@ -19,7 +19,7 @@ final readonly class Psr7Factory
 
     public function __construct()
     {
-        $this->responseFactory = new ResponseFactory();
+        $this->responseFactory      = new ResponseFactory();
         $this->serverRequestFactory = new ServerRequestFactory();
     }
 

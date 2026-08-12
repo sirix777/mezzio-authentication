@@ -28,12 +28,16 @@ final class NullTokenStorageTest extends TestCase
     #[Test]
     public function createReturnsToken(): void
     {
-        $token = $this->nullTokenStorage->create(['userId' => 1]);
+        $token = $this->nullTokenStorage->create([
+            'userId' => 1,
+        ]);
 
         self::assertInstanceOf(TokenInterface::class, $token);
         self::assertNotEmpty($token->getId());
         self::assertSame('null', $token->getStorage());
-        self::assertSame(['userId' => 1], $token->getPayload());
+        self::assertSame([
+            'userId' => 1,
+        ], $token->getPayload());
         self::assertNull($token->getExpiresAt());
     }
 
@@ -41,7 +45,7 @@ final class NullTokenStorageTest extends TestCase
     public function createWithCustomStorageName(): void
     {
         $nullTokenStorage = new NullTokenStorage('custom');
-        $token = $nullTokenStorage->create([]);
+        $token            = $nullTokenStorage->create([]);
 
         self::assertSame('custom', $token->getStorage());
     }

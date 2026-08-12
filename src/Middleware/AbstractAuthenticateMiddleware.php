@@ -30,7 +30,7 @@ abstract readonly class AbstractAuthenticateMiddleware implements MiddlewareInte
     final protected function authenticate(ServerRequestInterface $serverRequest): array
     {
         $tokenId = $this->tokenTransport->fetch($serverRequest);
-        $token = null;
+        $token   = null;
 
         if (is_string($tokenId) && '' !== $tokenId) {
             try {

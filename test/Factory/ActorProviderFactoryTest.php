@@ -36,7 +36,7 @@ final class ActorProviderFactoryTest extends TestCase
                 'authentication' => [
                     'actor' => [
                         'roles_key' => 'permissions',
-                        'role_key' => 'permission',
+                        'role_key'  => 'permission',
                     ],
                 ],
             ],

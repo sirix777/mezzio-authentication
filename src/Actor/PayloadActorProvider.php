@@ -22,7 +22,7 @@ final readonly class PayloadActorProvider implements AuthActorProviderInterface
     public function getActor(TokenInterface $token): ActorInterface
     {
         $payload = $token->getPayload();
-        $roles = $this->extractRoles($payload);
+        $roles   = $this->extractRoles($payload);
 
         return new TokenActor($roles);
     }

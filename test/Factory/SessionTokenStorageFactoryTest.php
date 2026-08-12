@@ -22,12 +22,14 @@ final class SessionTokenStorageFactoryTest extends TestCase
         ]));
 
         $inMemorySession = new InMemorySession();
-        $serverRequest = (new Psr7Factory())
+        $serverRequest   = (new Psr7Factory())
             ->createServerRequest('GET', '/')
             ->withAttribute(SessionInterface::class, $inMemorySession)
         ;
 
-        $token = $storage->create(['id' => 1], null, $serverRequest);
+        $token = $storage->create([
+            'id' => 1,
+        ], null, $serverRequest);
 
         self::assertNotNull($inMemorySession->get('_authentication.tokens.' . $token->getId()));
     }
@@ -46,12 +48,14 @@ final class SessionTokenStorageFactoryTest extends TestCase
         ]));
 
         $inMemorySession = new InMemorySession();
-        $serverRequest = (new Psr7Factory())
+        $serverRequest   = (new Psr7Factory())
             ->createServerRequest('GET', '/')
             ->withAttribute(SessionInterface::class, $inMemorySession)
         ;
 
-        $token = $storage->create(['id' => 1], null, $serverRequest);
+        $token = $storage->create([
+            'id' => 1,
+        ], null, $serverRequest);
 
         self::assertNotNull($inMemorySession->get('_custom.auth.' . $token->getId()));
     }

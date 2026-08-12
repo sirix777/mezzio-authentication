@@ -26,8 +26,10 @@ final class AuthenticateMiddlewareFactoryTest extends TestCase
         $serverRequest = (new Psr7Factory())->createServerRequest('GET', '/')
             ->withHeader('Authorization', 'Bearer token-id')
         ;
-        $response = (new Psr7Factory())->createResponse(204);
-        $authToken = new AuthToken('token-id', 'session', ['userId' => 1]);
+        $response  = (new Psr7Factory())->createResponse(204);
+        $authToken = new AuthToken('token-id', 'session', [
+            'userId' => 1,
+        ]);
         $actor = $this->createStub(ActorInterface::class);
 
         $storage = $this->createMock(TokenStorageInterface::class);
@@ -63,14 +65,14 @@ final class AuthenticateMiddlewareFactoryTest extends TestCase
         ;
 
         $middleware = (new AuthenticateMiddlewareFactory())(new ArrayContainer([
-            'config' => [
+            'config'                             => [
                 'authentication' => [
                     'default_storage' => 'session',
                 ],
             ],
-            AuthenticatorInterface::class => $authenticator,
+            AuthenticatorInterface::class        => $authenticator,
             TokenStorageProviderInterface::class => $storageProvider,
-            TokenTransportInterface::class => $transport,
+            TokenTransportInterface::class       => $transport,
         ]));
 
         $handler = $this->createMock(RequestHandlerInterface::class);

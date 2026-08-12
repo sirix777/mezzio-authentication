@@ -25,7 +25,7 @@ final class SessionTokenStorageTest extends TestCase
     protected function setUp(): void
     {
         $this->inMemorySession = new InMemorySession();
-        $this->psr7Factory = new Psr7Factory();
+        $this->psr7Factory     = new Psr7Factory();
     }
 
     #[Test]
@@ -40,38 +40,48 @@ final class SessionTokenStorageTest extends TestCase
     public function createStoresTokenInSession(): void
     {
         $sessionTokenStorage = new SessionTokenStorage();
-        $serverRequest = $this->requestWithSession();
+        $serverRequest       = $this->requestWithSession();
 
-        $token = $sessionTokenStorage->create(['userId' => 42], null, $serverRequest);
+        $token = $sessionTokenStorage->create([
+            'userId' => 42,
+        ], null, $serverRequest);
 
         self::assertInstanceOf(TokenInterface::class, $token);
         self::assertSame('session', $token->getStorage());
-        self::assertSame(['userId' => 42], $token->getPayload());
+        self::assertSame([
+            'userId' => 42,
+        ], $token->getPayload());
 
         $sessionData = $this->inMemorySession->get('_authentication.tokens.' . $token->getId());
         self::assertIsArray($sessionData);
-        self::assertSame(['userId' => 42], $sessionData['payload']);
+        self::assertSame([
+            'userId' => 42,
+        ], $sessionData['payload']);
     }
 
     #[Test]
     public function loadReturnsTokenFromSession(): void
     {
         $sessionTokenStorage = new SessionTokenStorage();
-        $serverRequest = $this->requestWithSession();
+        $serverRequest       = $this->requestWithSession();
 
-        $token = $sessionTokenStorage->create(['userId' => 42], null, $serverRequest);
+        $token = $sessionTokenStorage->create([
+            'userId' => 42,
+        ], null, $serverRequest);
         $loaded = $sessionTokenStorage->load($token->getId(), $serverRequest);
 
         self::assertInstanceOf(TokenInterface::class, $loaded);
         self::assertSame($token->getId(), $loaded->getId());
-        self::assertSame(['userId' => 42], $loaded->getPayload());
+        self::assertSame([
+            'userId' => 42,
+        ], $loaded->getPayload());
     }
 
     #[Test]
     public function loadReturnsNullForUnknownId(): void
     {
         $sessionTokenStorage = new SessionTokenStorage();
-        $serverRequest = $this->requestWithSession();
+        $serverRequest       = $this->requestWithSession();
 
         self::assertNull($sessionTokenStorage->load('nonexistent', $serverRequest));
     }
@@ -80,9 +90,11 @@ final class SessionTokenStorageTest extends TestCase
     public function deleteRemovesTokenFromSession(): void
     {
         $sessionTokenStorage = new SessionTokenStorage();
-        $serverRequest = $this->requestWithSession();
+        $serverRequest       = $this->requestWithSession();
 
-        $token = $sessionTokenStorage->create(['userId' => 42], null, $serverRequest);
+        $token = $sessionTokenStorage->create([
+            'userId' => 42,
+        ], null, $serverRequest);
         $sessionTokenStorage->delete($token, $serverRequest);
 
         self::assertNull($sessionTokenStorage->load($token->getId(), $serverRequest));
@@ -92,7 +104,7 @@ final class SessionTokenStorageTest extends TestCase
     public function throwsExceptionWhenSessionNotInRequest(): void
     {
         $sessionTokenStorage = new SessionTokenStorage();
-        $serverRequest = $this->psr7Factory->createServerRequest('GET', '/');
+        $serverRequest       = $this->psr7Factory->createServerRequest('GET', '/');
 
         $this->expectException(StorageException::class);
         $sessionTokenStorage->load('some-id', $serverRequest);
@@ -102,12 +114,14 @@ final class SessionTokenStorageTest extends TestCase
     public function readsSessionFromLegacySessionAttribute(): void
     {
         $sessionTokenStorage = new SessionTokenStorage();
-        $serverRequest = $this->psr7Factory
+        $serverRequest       = $this->psr7Factory
             ->createServerRequest('GET', '/')
             ->withAttribute('session', $this->inMemorySession)
         ;
 
-        $token = $sessionTokenStorage->create(['userId' => 42], null, $serverRequest);
+        $token = $sessionTokenStorage->create([
+            'userId' => 42,
+        ], null, $serverRequest);
 
         self::assertInstanceOf(TokenInterface::class, $sessionTokenStorage->load($token->getId(), $serverRequest));
     }
@@ -116,9 +130,11 @@ final class SessionTokenStorageTest extends TestCase
     public function loadReturnsNullForExpiredToken(): void
     {
         $sessionTokenStorage = new SessionTokenStorage();
-        $serverRequest = $this->requestWithSession();
+        $serverRequest       = $this->requestWithSession();
 
-        $token = $sessionTokenStorage->create(['userId' => 42], 1, $serverRequest);
+        $token = $sessionTokenStorage->create([
+            'userId' => 42,
+        ], 1, $serverRequest);
 
         usleep(2000); // Ensure we're past the expiry time
         $loaded = $sessionTokenStorage->load($token->getId(), $serverRequest);

@@ -19,7 +19,7 @@ final class CookieTokenTransportTest extends TestCase
     protected function setUp(): void
     {
         $this->cookieTokenTransport = new CookieTokenTransport();
-        $this->psr7Factory = new Psr7Factory();
+        $this->psr7Factory          = new Psr7Factory();
     }
 
     #[Test]
@@ -33,7 +33,9 @@ final class CookieTokenTransportTest extends TestCase
     {
         $serverRequest = $this->psr7Factory
             ->createServerRequest('GET', '/')
-            ->withCookieParams(['mezzio_authentication' => 'cookie-token'])
+            ->withCookieParams([
+                'mezzio_authentication' => 'cookie-token',
+            ])
         ;
 
         self::assertSame('cookie-token', $this->cookieTokenTransport->fetch($serverRequest));
@@ -52,7 +54,9 @@ final class CookieTokenTransportTest extends TestCase
     {
         $serverRequest = $this->psr7Factory
             ->createServerRequest('GET', '/')
-            ->withCookieParams(['mezzio_authentication' => ''])
+            ->withCookieParams([
+                'mezzio_authentication' => '',
+            ])
         ;
 
         self::assertNull($this->cookieTokenTransport->fetch($serverRequest));
@@ -62,9 +66,11 @@ final class CookieTokenTransportTest extends TestCase
     public function fetchWithCustomCookieName(): void
     {
         $cookieTokenTransport = new CookieTokenTransport('auth_token');
-        $serverRequest = $this->psr7Factory
+        $serverRequest        = $this->psr7Factory
             ->createServerRequest('GET', '/')
-            ->withCookieParams(['auth_token' => 'custom'])
+            ->withCookieParams([
+                'auth_token' => 'custom',
+            ])
         ;
 
         self::assertSame('custom', $cookieTokenTransport->fetch($serverRequest));
@@ -78,7 +84,7 @@ final class CookieTokenTransportTest extends TestCase
         $token->method('getExpiresAt')->willReturn(null);
 
         $response = $this->psr7Factory->createResponse();
-        $result = $this->cookieTokenTransport->attach($response, $token);
+        $result   = $this->cookieTokenTransport->attach($response, $token);
 
         $cookieHeader = $result->getHeaderLine('Set-Cookie');
         self::assertStringContainsString('mezzio_authentication=', $cookieHeader);
@@ -91,7 +97,7 @@ final class CookieTokenTransportTest extends TestCase
     public function detachSetsExpiredCookie(): void
     {
         $response = $this->psr7Factory->createResponse();
-        $result = $this->cookieTokenTransport->detach($response);
+        $result   = $this->cookieTokenTransport->detach($response);
 
         $cookieHeader = $result->getHeaderLine('Set-Cookie');
         self::assertStringContainsString('mezzio_authentication=deleted', $cookieHeader);

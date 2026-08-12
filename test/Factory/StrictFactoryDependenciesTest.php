@@ -63,14 +63,16 @@ final class StrictFactoryDependenciesTest extends TestCase
 
         yield 'auth manager factory' => [
             static fn (ArrayContainer $arrayContainer): mixed => (new AuthManagerFactory())($arrayContainer),
-            [TokenStorageProviderInterface::class => TokenStorageProviderInterface::class],
+            [
+                TokenStorageProviderInterface::class => TokenStorageProviderInterface::class,
+            ],
             TokenTransportInterface::class,
         ];
 
         yield 'authenticate middleware factory' => [
             static fn (ArrayContainer $arrayContainer): mixed => (new AuthenticateMiddlewareFactory())($arrayContainer),
             [
-                AuthenticatorInterface::class => AuthenticatorInterface::class,
+                AuthenticatorInterface::class        => AuthenticatorInterface::class,
                 TokenStorageProviderInterface::class => TokenStorageProviderInterface::class,
             ],
             TokenTransportInterface::class,
@@ -85,7 +87,7 @@ final class StrictFactoryDependenciesTest extends TestCase
         yield 'optional authenticate middleware factory' => [
             static fn (ArrayContainer $arrayContainer): mixed => (new OptionalAuthenticateMiddlewareFactory())($arrayContainer),
             [
-                AuthenticatorInterface::class => AuthenticatorInterface::class,
+                AuthenticatorInterface::class        => AuthenticatorInterface::class,
                 TokenStorageProviderInterface::class => TokenStorageProviderInterface::class,
             ],
             TokenTransportInterface::class,
@@ -93,7 +95,9 @@ final class StrictFactoryDependenciesTest extends TestCase
 
         yield 'security actor provider factory' => [
             static fn (ArrayContainer $arrayContainer): mixed => (new SecurityActorProviderFactory())($arrayContainer),
-            [AuthContextInterface::class => AuthContextInterface::class],
+            [
+                AuthContextInterface::class => AuthContextInterface::class,
+            ],
             GuestActor::class,
         ];
 

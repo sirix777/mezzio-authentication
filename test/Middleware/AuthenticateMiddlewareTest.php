@@ -38,7 +38,7 @@ final class AuthenticateMiddlewareTest extends TestCase
     #[Test]
     public function throwsWhenRequestIsUnauthenticated(): void
     {
-        $provider = $this->createStub(AuthActorProviderInterface::class);
+        $provider               = $this->createStub(AuthActorProviderInterface::class);
         $authenticateMiddleware = new AuthenticateMiddleware(
             new TokenAuthenticator($provider),
             new TokenStorageProvider('session', [
@@ -59,13 +59,15 @@ final class AuthenticateMiddlewareTest extends TestCase
     public function passesAuthenticatedRequestThrough(): void
     {
         $inMemorySession = new InMemorySession();
-        $serverRequest = $this->psr7Factory
+        $serverRequest   = $this->psr7Factory
             ->createServerRequest('GET', '/')
             ->withAttribute(SessionInterface::class, $inMemorySession)
         ;
 
         $sessionTokenStorage = new SessionTokenStorage();
-        $token = $sessionTokenStorage->create(['userId' => 42], null, $serverRequest);
+        $token               = $sessionTokenStorage->create([
+            'userId' => 42,
+        ], null, $serverRequest);
         $actor = $this->createStub(ActorInterface::class);
 
         $provider = $this->createMock(AuthActorProviderInterface::class);
@@ -77,7 +79,9 @@ final class AuthenticateMiddlewareTest extends TestCase
 
         $authenticateMiddleware = new AuthenticateMiddleware(
             new TokenAuthenticator($provider),
-            new TokenStorageProvider('session', ['session' => $sessionTokenStorage]),
+            new TokenStorageProvider('session', [
+                'session' => $sessionTokenStorage,
+            ]),
             new BearerTokenTransport(),
             'session',
         );
@@ -105,13 +109,15 @@ final class AuthenticateMiddlewareTest extends TestCase
     public function writesAuthenticationAttributesOnAuthenticatedRequest(): void
     {
         $inMemorySession = new InMemorySession();
-        $serverRequest = $this->psr7Factory
+        $serverRequest   = $this->psr7Factory
             ->createServerRequest('GET', '/')
             ->withAttribute(SessionInterface::class, $inMemorySession)
         ;
 
         $sessionTokenStorage = new SessionTokenStorage();
-        $token = $sessionTokenStorage->create(['userId' => 42], null, $serverRequest);
+        $token               = $sessionTokenStorage->create([
+            'userId' => 42,
+        ], null, $serverRequest);
         $actor = $this->createStub(ActorInterface::class);
 
         $provider = $this->createMock(AuthActorProviderInterface::class);
@@ -124,7 +130,9 @@ final class AuthenticateMiddlewareTest extends TestCase
 
         $authenticateMiddleware = new AuthenticateMiddleware(
             new TokenAuthenticator($provider),
-            new TokenStorageProvider('session', ['session' => $sessionTokenStorage]),
+            new TokenStorageProvider('session', [
+                'session' => $sessionTokenStorage,
+            ]),
             new BearerTokenTransport(),
             'session',
         );
@@ -171,7 +179,7 @@ final class AuthenticateMiddlewareTest extends TestCase
     #[Test]
     public function treatsStorageErrorsAsUnauthenticatedRequest(): void
     {
-        $provider = $this->createStub(AuthActorProviderInterface::class);
+        $provider               = $this->createStub(AuthActorProviderInterface::class);
         $authenticateMiddleware = new AuthenticateMiddleware(
             new TokenAuthenticator($provider),
             new TokenStorageProvider('session', [

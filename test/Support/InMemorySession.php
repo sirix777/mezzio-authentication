@@ -51,7 +51,7 @@ final class InMemorySession implements SessionInterface
 
     public function regenerate(): SessionInterface
     {
-        $clone = clone $this;
+        $clone              = clone $this;
         $clone->regenerated = true;
 
         return $clone;

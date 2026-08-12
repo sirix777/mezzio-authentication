@@ -23,12 +23,14 @@ final class OptionalAuthenticateMiddlewareFactoryTest extends TestCase
     #[Test]
     public function transportStorageOverridesDefaultStorage(): void
     {
-        $psr7Factory = new Psr7Factory();
+        $psr7Factory   = new Psr7Factory();
         $serverRequest = $psr7Factory->createServerRequest('GET', '/')
             ->withHeader('Authorization', 'Bearer token-id')
         ;
-        $response = $psr7Factory->createResponse(200);
-        $authToken = new AuthToken('token-id', 'api', ['userId' => 1]);
+        $response  = $psr7Factory->createResponse(200);
+        $authToken = new AuthToken('token-id', 'api', [
+            'userId' => 1,
+        ]);
         $actor = $this->createStub(ActorInterface::class);
 
         $storage = $this->createMock(TokenStorageInterface::class);
@@ -64,17 +66,17 @@ final class OptionalAuthenticateMiddlewareFactoryTest extends TestCase
         ;
 
         $middleware = (new OptionalAuthenticateMiddlewareFactory())(new ArrayContainer([
-            'config' => [
+            'config'                             => [
                 'authentication' => [
                     'default_storage' => 'session',
-                    'transport' => [
+                    'transport'       => [
                         'storage' => 'api',
                     ],
                 ],
             ],
-            AuthenticatorInterface::class => $authenticator,
+            AuthenticatorInterface::class        => $authenticator,
             TokenStorageProviderInterface::class => $storageProvider,
-            TokenTransportInterface::class => $transport,
+            TokenTransportInterface::class       => $transport,
         ]));
 
         $handler = $this->createMock(RequestHandlerInterface::class);

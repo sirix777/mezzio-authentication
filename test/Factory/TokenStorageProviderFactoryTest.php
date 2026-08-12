@@ -24,8 +24,12 @@ final class TokenStorageProviderFactoryTest extends TestCase
     public function throwsWhenDefaultSessionStorageIsNotRegistered(): void
     {
         $tokenStorageProviderFactory = new TokenStorageProviderFactory();
-        $arrayContainer = new ArrayContainer([
-            'config' => ['authentication' => ['default_storage' => 'session']],
+        $arrayContainer              = new ArrayContainer([
+            'config'                => [
+                'authentication' => [
+                    'default_storage' => 'session',
+                ],
+            ],
             NullTokenStorage::class => new NullTokenStorage(),
         ]);
 
@@ -38,10 +42,14 @@ final class TokenStorageProviderFactoryTest extends TestCase
     public function usesSessionStorageWhenItIsRegistered(): void
     {
         $tokenStorageProviderFactory = new TokenStorageProviderFactory();
-        $sessionTokenStorage = new SessionTokenStorage();
-        $arrayContainer = new ArrayContainer([
-            'config' => ['authentication' => ['default_storage' => 'session']],
-            NullTokenStorage::class => new NullTokenStorage(),
+        $sessionTokenStorage         = new SessionTokenStorage();
+        $arrayContainer              = new ArrayContainer([
+            'config'                   => [
+                'authentication' => [
+                    'default_storage' => 'session',
+                ],
+            ],
+            NullTokenStorage::class    => new NullTokenStorage(),
             SessionTokenStorage::class => $sessionTokenStorage,
         ]);
 
@@ -54,7 +62,7 @@ final class TokenStorageProviderFactoryTest extends TestCase
     public function registersStoragesFromConfigurationMapping(): void
     {
         $tokenStorageProviderFactory = new TokenStorageProviderFactory();
-        $customStorage = new class implements TokenStorageInterface {
+        $customStorage               = new class implements TokenStorageInterface {
             public function create(array $payload, ?int $expiresAt = null, ?ServerRequestInterface $serverRequest = null): TokenInterface
             {
                 throw new LogicException('Not needed for this test.');
@@ -69,16 +77,16 @@ final class TokenStorageProviderFactoryTest extends TestCase
         };
 
         $arrayContainer = new ArrayContainer([
-            'config' => [
+            'config'                => [
                 'authentication' => [
                     'default_storage' => 'redis',
-                    'storages' => [
+                    'storages'        => [
                         'redis' => 'app.storage.redis',
                     ],
                 ],
             ],
             NullTokenStorage::class => new NullTokenStorage(),
-            'app.storage.redis' => $customStorage,
+            'app.storage.redis'     => $customStorage,
         ]);
 
         $tokenStorageProvider = $tokenStorageProviderFactory($arrayContainer);
@@ -91,8 +99,8 @@ final class TokenStorageProviderFactoryTest extends TestCase
     public function throwsForMappedServiceWithInvalidType(): void
     {
         $tokenStorageProviderFactory = new TokenStorageProviderFactory();
-        $arrayContainer = new ArrayContainer([
-            'config' => [
+        $arrayContainer              = new ArrayContainer([
+            'config'                => [
                 'authentication' => [
                     'storages' => [
                         'broken' => 'app.storage.broken',
@@ -100,7 +108,7 @@ final class TokenStorageProviderFactoryTest extends TestCase
                 ],
             ],
             NullTokenStorage::class => new NullTokenStorage(),
-            'app.storage.broken' => new stdClass(),
+            'app.storage.broken'    => new stdClass(),
         ]);
 
         $this->expectException(InvalidContainerServiceException::class);
@@ -112,8 +120,8 @@ final class TokenStorageProviderFactoryTest extends TestCase
     public function throwsForMappedServiceThatIsNotRegistered(): void
     {
         $tokenStorageProviderFactory = new TokenStorageProviderFactory();
-        $arrayContainer = new ArrayContainer([
-            'config' => [
+        $arrayContainer              = new ArrayContainer([
+            'config'                => [
                 'authentication' => [
                     'storages' => [
                         'redis' => 'app.storage.redis',

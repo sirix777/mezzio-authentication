@@ -21,8 +21,8 @@ final class OptionalAuthenticateMiddlewareFactory
     public function __invoke(ContainerInterface $container): OptionalAuthenticateMiddleware
     {
         $containerResolver = ContainerResolver::forFactory($container, self::class);
-        $configReader = ConfigReader::fromContainer($containerResolver);
-        $defaultStorage = $configReader->nonEmptyString('authentication.default_storage', 'null');
+        $configReader      = ConfigReader::fromContainer($containerResolver);
+        $defaultStorage    = $configReader->nonEmptyString('authentication.default_storage', 'null');
 
         return new OptionalAuthenticateMiddleware(
             $containerResolver->get(AuthenticatorInterface::class),

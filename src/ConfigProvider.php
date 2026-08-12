@@ -49,27 +49,27 @@ final readonly class ConfigProvider
     public function getDependencies(): array
     {
         return [
-            'factories' => [
-                AuthManagerInterface::class => AuthManagerFactory::class,
-                AuthenticatorInterface::class => AuthenticatorFactory::class,
-                AuthActorProviderInterface::class => ActorProviderFactory::class,
+            'factories'  => [
+                AuthManagerInterface::class           => AuthManagerFactory::class,
+                AuthenticatorInterface::class         => AuthenticatorFactory::class,
+                AuthActorProviderInterface::class     => ActorProviderFactory::class,
                 SecurityActorProviderInterface::class => SecurityActorProviderFactory::class,
-                ActorInterface::class => ActorFactory::class,
-                TokenStorageProviderInterface::class => TokenStorageProviderFactory::class,
-                SessionTokenStorage::class => SessionTokenStorageFactory::class,
-                TokenTransportInterface::class => TokenTransportFactory::class,
-                AuthenticateMiddleware::class => AuthenticateMiddlewareFactory::class,
+                ActorInterface::class                 => ActorFactory::class,
+                TokenStorageProviderInterface::class  => TokenStorageProviderFactory::class,
+                SessionTokenStorage::class            => SessionTokenStorageFactory::class,
+                TokenTransportInterface::class        => TokenTransportFactory::class,
+                AuthenticateMiddleware::class         => AuthenticateMiddlewareFactory::class,
                 OptionalAuthenticateMiddleware::class => OptionalAuthenticateMiddlewareFactory::class,
             ],
             'invokables' => [
                 AuthenticationContext::class => AuthenticationContext::class,
-                NullActorProvider::class => NullActorProvider::class,
-                GuestActor::class => GuestActor::class,
-                NullTokenStorage::class => NullTokenStorage::class,
-                BearerTokenTransport::class => BearerTokenTransport::class,
-                GuestOnlyMiddleware::class => GuestOnlyMiddleware::class,
+                NullActorProvider::class     => NullActorProvider::class,
+                GuestActor::class            => GuestActor::class,
+                NullTokenStorage::class      => NullTokenStorage::class,
+                BearerTokenTransport::class  => BearerTokenTransport::class,
+                GuestOnlyMiddleware::class   => GuestOnlyMiddleware::class,
             ],
-            'aliases' => [
+            'aliases'    => [
                 AuthContextInterface::class => AuthenticationContext::class,
             ],
         ];

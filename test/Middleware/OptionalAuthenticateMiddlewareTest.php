@@ -32,7 +32,7 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
     #[Test]
     public function passesRequestThroughWhenUnauthenticated(): void
     {
-        $provider = $this->createStub(AuthActorProviderInterface::class);
+        $provider                       = $this->createStub(AuthActorProviderInterface::class);
         $optionalAuthenticateMiddleware = new OptionalAuthenticateMiddleware(
             new TokenAuthenticator($provider),
             new TokenStorageProvider('null', [
@@ -60,7 +60,7 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
     #[Test]
     public function setsAuthenticationAttributesOnRequest(): void
     {
-        $provider = $this->createStub(AuthActorProviderInterface::class);
+        $provider                       = $this->createStub(AuthActorProviderInterface::class);
         $optionalAuthenticateMiddleware = new OptionalAuthenticateMiddleware(
             new TokenAuthenticator($provider),
             new TokenStorageProvider('null', [

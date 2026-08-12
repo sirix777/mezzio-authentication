@@ -15,8 +15,10 @@ final class TokenStorageProviderTest extends TestCase
     #[Test]
     public function returnsStorageByName(): void
     {
-        $storage = $this->createStub(TokenStorageInterface::class);
-        $tokenStorageProvider = new TokenStorageProvider('default', ['default' => $storage]);
+        $storage              = $this->createStub(TokenStorageInterface::class);
+        $tokenStorageProvider = new TokenStorageProvider('default', [
+            'default' => $storage,
+        ]);
 
         self::assertSame($storage, $tokenStorageProvider->getStorage('default'));
     }
@@ -24,9 +26,9 @@ final class TokenStorageProviderTest extends TestCase
     #[Test]
     public function getDefaultStorageReturnsConfiguredDefault(): void
     {
-        $storage = $this->createStub(TokenStorageInterface::class);
+        $storage              = $this->createStub(TokenStorageInterface::class);
         $tokenStorageProvider = new TokenStorageProvider('session', [
-            'null' => $this->createStub(TokenStorageInterface::class),
+            'null'    => $this->createStub(TokenStorageInterface::class),
             'session' => $storage,
         ]);
 

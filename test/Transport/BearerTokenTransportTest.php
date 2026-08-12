@@ -19,7 +19,7 @@ final class BearerTokenTransportTest extends TestCase
     protected function setUp(): void
     {
         $this->bearerTokenTransport = new BearerTokenTransport();
-        $this->psr7Factory = new Psr7Factory();
+        $this->psr7Factory          = new Psr7Factory();
     }
 
     #[Test]
@@ -73,7 +73,7 @@ final class BearerTokenTransportTest extends TestCase
     public function fetchWithCustomHeaderAndScheme(): void
     {
         $bearerTokenTransport = new BearerTokenTransport('X-Auth-Token', 'Token');
-        $serverRequest = $this->psr7Factory
+        $serverRequest        = $this->psr7Factory
             ->createServerRequest('GET', '/')
             ->withHeader('X-Auth-Token', 'Token abc123')
         ;
@@ -88,7 +88,7 @@ final class BearerTokenTransportTest extends TestCase
         $token->method('getId')->willReturn('attached-token');
 
         $response = $this->psr7Factory->createResponse();
-        $result = $this->bearerTokenTransport->attach($response, $token);
+        $result   = $this->bearerTokenTransport->attach($response, $token);
 
         self::assertSame('Bearer attached-token', $result->getHeaderLine('Authorization'));
     }

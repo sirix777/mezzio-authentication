@@ -74,7 +74,7 @@ final class RoutingAttributesIntegrationTest extends TestCase
     public function routingAttributesRegistersAuthenticationMiddlewareInCachedMode(): void
     {
         $compiledRouteRegistrarCache = $this->createCompiledCache();
-        $routeCollector = $this->createCollector();
+        $routeCollector              = $this->createCollector();
 
         $this->createProvider(
             [
@@ -171,7 +171,7 @@ final class RoutingAttributesIntegrationTest extends TestCase
 
     private function createCompiledCache(): CompiledRouteRegistrarCache
     {
-        $cacheFile = sys_get_temp_dir() . '/mezzio-authentication-routing-attributes-' . uniqid('', true) . '.php';
+        $cacheFile          = sys_get_temp_dir() . '/mezzio-authentication-routing-attributes-' . uniqid('', true) . '.php';
         $this->cacheFiles[] = $cacheFile;
 
         return new CompiledRouteRegistrarCache(
@@ -190,7 +190,7 @@ final class RoutingAttributesIntegrationTest extends TestCase
 
             public function route(string $path, MiddlewareInterface $middleware, ?array $methods = null, ?string $name = null): Route
             {
-                $route = new Route($path, $middleware, $methods, $name);
+                $route          = new Route($path, $middleware, $methods, $name);
                 $this->routes[] = $route;
 
                 return $route;

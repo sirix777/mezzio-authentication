@@ -48,7 +48,7 @@ final class ContextActorProviderTest extends TestCase
         $context = $this->createStub(AuthContextInterface::class);
         $context->method('actor')->willReturn(null);
 
-        $guestActor = new GuestActor();
+        $guestActor           = new GuestActor();
         $contextActorProvider = new ContextActorProvider($context, $guestActor);
 
         self::assertSame($guestActor, $contextActorProvider->getActor());

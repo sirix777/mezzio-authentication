@@ -28,7 +28,7 @@ final class GuestOnlyMiddlewareTest extends TestCase
     #[Test]
     public function passesWhenUserIsGuest(): void
     {
-        $guestOnlyMiddleware = new GuestOnlyMiddleware();
+        $guestOnlyMiddleware   = new GuestOnlyMiddleware();
         $authenticationContext = new AuthenticationContext();
 
         $serverRequest = $this->psr7Factory
@@ -54,7 +54,7 @@ final class GuestOnlyMiddlewareTest extends TestCase
     #[Test]
     public function throwsWhenUserIsAuthenticated(): void
     {
-        $guestOnlyMiddleware = new GuestOnlyMiddleware();
+        $guestOnlyMiddleware   = new GuestOnlyMiddleware();
         $authenticationContext = new AuthenticationContext($this->createStub(TokenInterface::class));
 
         $serverRequest = $this->psr7Factory

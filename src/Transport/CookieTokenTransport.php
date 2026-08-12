@@ -28,7 +28,7 @@ final readonly class CookieTokenTransport implements TokenTransportInterface
     public function fetch(ServerRequestInterface $serverRequest): ?string
     {
         $cookies = $serverRequest->getCookieParams();
-        $token = $cookies[$this->name] ?? null;
+        $token   = $cookies[$this->name] ?? null;
 
         return is_string($token) && '' !== $token ? $token : null;
     }

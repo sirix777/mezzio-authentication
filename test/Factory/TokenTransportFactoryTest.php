@@ -37,11 +37,11 @@ final class TokenTransportFactoryTest extends TestCase
                     'transport' => [
                         'driver' => 'cookie',
                     ],
-                    'cookie' => [
-                        'name' => 'app_auth',
-                        'path' => '/admin',
-                        'domain' => 'example.com',
-                        'secure' => true,
+                    'cookie'    => [
+                        'name'      => 'app_auth',
+                        'path'      => '/admin',
+                        'domain'    => 'example.com',
+                        'secure'    => true,
                         'http_only' => true,
                         'same_site' => 'Strict',
                     ],
@@ -49,10 +49,12 @@ final class TokenTransportFactoryTest extends TestCase
             ],
         ]));
 
-        $psr7Factory = new Psr7Factory();
+        $psr7Factory   = new Psr7Factory();
         $serverRequest = $psr7Factory
             ->createServerRequest('GET', '/')
-            ->withCookieParams(['app_auth' => 'cookie-token'])
+            ->withCookieParams([
+                'app_auth' => 'cookie-token',
+            ])
         ;
 
         self::assertSame('cookie-token', $transport->fetch($serverRequest));

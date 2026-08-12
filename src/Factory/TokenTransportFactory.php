@@ -30,7 +30,7 @@ final class TokenTransportFactory
                 httpOnly: $configReader->bool('authentication.cookie.http_only', true),
                 sameSite: $configReader->nonEmptyString('authentication.cookie.same_site', 'Lax'),
             ),
-            default => new BearerTokenTransport(),
+            default  => new BearerTokenTransport(),
         };
     }
 }

@@ -33,7 +33,7 @@ final readonly class SessionTokenStorage implements TokenStorageInterface
         );
 
         $session->set($this->key($authToken->getId()), [
-            'payload' => $payload,
+            'payload'    => $payload,
             'expires_at' => $expiresAt,
         ]);
 

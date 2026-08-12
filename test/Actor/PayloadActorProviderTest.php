@@ -15,7 +15,9 @@ final class PayloadActorProviderTest extends TestCase
     #[Test]
     public function extractsRolesFromList(): void
     {
-        $token = $this->createToken(['roles' => ['admin', 'editor']]);
+        $token = $this->createToken([
+            'roles' => ['admin', 'editor'],
+        ]);
         $payloadActorProvider = new PayloadActorProvider();
 
         $actor = $payloadActorProvider->getActor($token);
@@ -27,7 +29,9 @@ final class PayloadActorProviderTest extends TestCase
     #[Test]
     public function extractsRolesWithCustomKey(): void
     {
-        $token = $this->createToken(['permissions' => ['read', 'write']]);
+        $token = $this->createToken([
+            'permissions' => ['read', 'write'],
+        ]);
         $payloadActorProvider = new PayloadActorProvider('permissions');
 
         $actor = $payloadActorProvider->getActor($token);
@@ -38,7 +42,9 @@ final class PayloadActorProviderTest extends TestCase
     #[Test]
     public function extractsSingleRole(): void
     {
-        $token = $this->createToken(['role' => 'admin']);
+        $token = $this->createToken([
+            'role' => 'admin',
+        ]);
         $payloadActorProvider = new PayloadActorProvider();
 
         $actor = $payloadActorProvider->getActor($token);
@@ -49,7 +55,7 @@ final class PayloadActorProviderTest extends TestCase
     #[Test]
     public function returnsEmptyRolesWhenNonePresent(): void
     {
-        $token = $this->createToken([]);
+        $token                = $this->createToken([]);
         $payloadActorProvider = new PayloadActorProvider();
 
         $actor = $payloadActorProvider->getActor($token);
@@ -60,7 +66,9 @@ final class PayloadActorProviderTest extends TestCase
     #[Test]
     public function filtersInvalidRoleValues(): void
     {
-        $token = $this->createToken(['roles' => ['admin', 123, '', null]]);
+        $token = $this->createToken([
+            'roles' => ['admin', 123, '', null],
+        ]);
         $payloadActorProvider = new PayloadActorProvider();
 
         $actor = $payloadActorProvider->getActor($token);
@@ -73,7 +81,7 @@ final class PayloadActorProviderTest extends TestCase
     {
         $token = $this->createToken([
             'roles' => ['admin'],
-            'role' => 'editor',
+            'role'  => 'editor',
         ]);
         $payloadActorProvider = new PayloadActorProvider();
 

@@ -39,7 +39,7 @@ final class AuthenticatedTest extends TestCase
     public function isAttribute(): void
     {
         $reflectionClass = new ReflectionClass(Authenticated::class);
-        $attributes = $reflectionClass->getAttributes();
+        $attributes      = $reflectionClass->getAttributes();
 
         self::assertCount(1, $attributes);
         self::assertSame(Attribute::class, $attributes[0]->getName());

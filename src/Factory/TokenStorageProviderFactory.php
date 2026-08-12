@@ -29,8 +29,8 @@ final class TokenStorageProviderFactory
     public function __invoke(ContainerInterface $container): TokenStorageProviderInterface
     {
         $containerResolver = ContainerResolver::forFactory($container, self::class);
-        $configReader = ConfigReader::fromContainer($containerResolver);
-        $defaultStorage = $configReader->nonEmptyString('authentication.default_storage', 'null');
+        $configReader      = ConfigReader::fromContainer($containerResolver);
+        $defaultStorage    = $configReader->nonEmptyString('authentication.default_storage', 'null');
 
         $storages = [
             'null' => $containerResolver->get(NullTokenStorage::class),
