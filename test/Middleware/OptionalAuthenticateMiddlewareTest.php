@@ -12,6 +12,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Sirix\Mezzio\Authentication\AuthenticationAttributes;
 use Sirix\Mezzio\Authentication\Contract\AuthActorProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthContextInterface;
+use Sirix\Mezzio\Authentication\Exception\StorageException;
 use Sirix\Mezzio\Authentication\Middleware\OptionalAuthenticateMiddleware;
 use Sirix\Mezzio\Authentication\Storage\NullTokenStorage;
 use Sirix\Mezzio\Authentication\Storage\SessionTokenStorage;
@@ -100,7 +101,7 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function continuesWhenStorageFailsToLoadToken(): void
+    public function failsClosedWhenStorageFailsToLoadToken(): void
     {
         $provider = $this->createStub(AuthActorProviderInterface::class);
 
@@ -113,7 +114,8 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
             'session',
         );
 
-        $response = $optionalAuthenticateMiddleware->process(
+        $this->expectException(StorageException::class);
+        $optionalAuthenticateMiddleware->process(
             $this->psr7Factory
                 ->createServerRequest('GET', '/')
                 ->withHeader('Authorization', 'Bearer broken-token'),
@@ -126,7 +128,5 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
                 }
             },
         );
-
-        self::assertSame(200, $response->getStatusCode());
     }
 }

@@ -29,6 +29,28 @@ final class TokenTransportFactoryTest extends TestCase
     }
 
     #[Test]
+    public function readsBearerTransportConfiguration(): void
+    {
+        $transport = (new TokenTransportFactory())(new ArrayContainer([
+            'config' => [
+                'authentication' => [
+                    'bearer' => [
+                        'header' => 'X-Access-Token',
+                        'scheme' => 'Token',
+                    ],
+                ],
+            ],
+        ]));
+
+        $serverRequest = (new Psr7Factory())
+            ->createServerRequest('GET', '/')
+            ->withHeader('X-Access-Token', 'Token bearer-token')
+        ;
+
+        self::assertSame('bearer-token', $transport->fetch($serverRequest));
+    }
+
+    #[Test]
     public function readsCookieTransportConfiguration(): void
     {
         $transport = (new TokenTransportFactory())(new ArrayContainer([
@@ -70,5 +92,26 @@ final class TokenTransportFactoryTest extends TestCase
         self::assertStringContainsString('Secure', $response->getHeaderLine('Set-Cookie'));
         self::assertStringContainsString('HttpOnly', $response->getHeaderLine('Set-Cookie'));
         self::assertStringContainsString('SameSite=Strict', $response->getHeaderLine('Set-Cookie'));
+    }
+
+    #[Test]
+    public function usesTheDocumentedCookieDefaults(): void
+    {
+        $transport = (new TokenTransportFactory())(new ArrayContainer([
+            'config' => [
+                'authentication' => [
+                    'transport' => [
+                        'driver' => 'cookie',
+                    ],
+                ],
+            ],
+        ]));
+        $response = $transport->attach(
+            (new Psr7Factory())->createResponse(),
+            new AuthToken('attached-token', 'session', []),
+        );
+
+        self::assertStringContainsString('sirix_authentication=attached-token', $response->getHeaderLine('Set-Cookie'));
+        self::assertStringNotContainsString('Secure', $response->getHeaderLine('Set-Cookie'));
     }
 }

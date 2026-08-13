@@ -1,10 +1,12 @@
 # Mezzio Authentication
 
+[![Latest Stable Version](http://poser.pugx.org/sirix/mezzio-authentication/v)](https://packagist.org/packages/sirix/mezzio-authentication) [![Total Downloads](http://poser.pugx.org/sirix/mezzio-authentication/downloads)](https://packagist.org/packages/sirix/mezzio-authentication) [![Latest Unstable Version](http://poser.pugx.org/sirix/mezzio-authentication/v/unstable)](https://packagist.org/packages/sirix/mezzio-authentication) [![License](http://poser.pugx.org/sirix/mezzio-authentication/license)](https://packagist.org/packages/sirix/mezzio-authentication) [![PHP Version Require](http://poser.pugx.org/sirix/mezzio-authentication/require/php)](https://packagist.org/packages/sirix/mezzio-authentication)
+
 Token-based authentication package for Mezzio framework with optional attribute support.
 
 ## Stability
 
-The `1.x` line treats the public contracts, middleware behavior, and request attribute names documented below as stable integration points.
+The `2.x` line treats the public contracts, middleware behavior, and request attribute names documented below as stable integration points. See the 2.0 migration notes in the changelog before upgrading from 1.x.
 
 ## Installation
 
@@ -28,6 +30,10 @@ return [
             'driver' => 'bearer',
             'storage' => 'session',
         ],
+        'bearer' => [
+            'header' => 'Authorization',
+            'scheme' => 'Bearer',
+        ],
         'session' => [
             'prefix' => '_authentication.tokens.',
         ],
@@ -36,7 +42,7 @@ return [
             // 'redis' => App\Authentication\Storage\RedisTokenStorage::class,
         ],
         'cookie' => [
-            'name' => 'mezzio_authentication',
+            'name' => 'sirix_authentication',
             'path' => '/',
             'domain' => null,
             'secure' => false,
@@ -63,7 +69,7 @@ Also configure a session persistence adapter for your application (for example c
 
 If `mezzio/mezzio-session` is not installed, `SessionTokenStorage` is not wired and the package uses `NullTokenStorage` as fallback.
 
-If a token id is provided by transport but current storage backend is unavailable for that request (for example missing session in request), authentication middleware treats request as guest instead of failing with a storage runtime exception.
+If a token id is provided by transport but its storage backend is unavailable for that request (for example a missing session attribute), authentication middleware stops the request with `StorageException`. It never treats an unverifiable request as a guest request; this is especially important for `#[GuestOnly]` routes.
 
 ### 3. Protect Routes
 
@@ -103,12 +109,16 @@ final class ProfileHandler implements RequestHandlerInterface
 
 ### AuthManager
 
-Main HTTP-facing entry point for authentication operations. Current request authentication state is read from the provided `ServerRequestInterface`; it is not stored in a mutable singleton service.
+Main HTTP-facing entry point for authentication operations. Current request authentication state is read from the provided `ServerRequestInterface`; it is not stored in a mutable singleton service. `login()` needs both the request and response: it creates the token using the transport's configured storage and attaches its identifier to the response.
 
 ```php
 use Sirix\Mezzio\Authentication\Contract\AuthManagerInterface;
 
-$manager->login(['userId' => 1, 'roles' => ['admin']]);
+$response = $manager->login(
+    $request,
+    $response,
+    ['userId' => 1, 'roles' => ['admin']],
+);
 $manager->context($request); // AuthContextInterface from request attributes
 $manager->check($request);  // true/false based on request auth context
 $manager->guest($request);  // true/false based on request auth context
@@ -123,12 +133,14 @@ For HTTP handlers and middleware, prefer `AuthManagerInterface::actor($request)`
 
 Two built-in storage backends:
 
-- `NullTokenStorage` — tokens are generated but not persisted (testing/stateless).
+- `NullTokenStorage` — tokens are generated but not persisted (useful for testing only; issued tokens cannot be authenticated later).
 - `SessionTokenStorage` — tokens stored in session via `mezzio/mezzio-session`.
 
 When `mezzio/mezzio-session` is unavailable, only `NullTokenStorage` is active.
 
 Custom storage implements `TokenStorageInterface`.
+
+The single storage used to issue and read transported tokens is `authentication.transport.storage` (or `authentication.default_storage` when it is omitted). The token-storage provider factory validates that storage during container construction. Do not issue tokens through an unrelated storage: token ids do not contain a storage discriminator.
 
 ### Token Transport
 
@@ -155,12 +167,16 @@ $actor->getRoles(); // ['admin', 'editor']
 
 `SecurityActorProviderInterface` is intended for non-request or application-managed security contexts. Its default `ContextActorProvider` reads from the injected `AuthContextInterface` service and is not automatically synchronized with the current HTTP request. It is not a replacement for `AuthManagerInterface::actor($request)` in HTTP code.
 
+An `AuthActorProviderInterface` must return an actor for every accepted token. Returning `null` rejects the token and produces a guest authentication context; it must not be used to represent an authenticated user without an actor.
+
+An `AuthenticationContext` is either fully authenticated (both token and actor) or empty/guest. It never exposes a token without an actor.
+
 ### Middleware
 
 | Middleware | Behavior |
 |-----------|----------|
 | `AuthenticateMiddleware` | Requires authentication, throws `Exception\AuthenticationException` (401) |
-| `OptionalAuthenticateMiddleware` | Attempts authentication, passes through regardless |
+| `OptionalAuthenticateMiddleware` | Passes through when no token is supplied or it is unknown; propagates storage failures |
 | `GuestOnlyMiddleware` | Allows only guests, throws `Exception\AlreadyAuthenticatedException` (403) |
 
 ### Attributes
@@ -211,7 +227,9 @@ The authentication package does not depend on RBAC. The integration contract is 
 
 When using session storage, `Mezzio\Session\SessionMiddleware` must run before authentication middleware.
 
-For cookie transport in production, use `secure: true` over HTTPS, keep `http_only: true`, and choose a `same_site` policy appropriate for your application flow.
+Cookie transport options are intentionally passed through without package-level policy validation, so applications retain control over deployment-specific settings. In production, use `secure: true` over HTTPS, keep `http_only: true`, choose a `same_site` policy appropriate for the application flow, and provide CSRF protection where cookies are sent automatically. `SameSite=None` requires `Secure` in browsers, so configure both together.
+
+When using the container integration, configure the cookie name with `authentication.cookie.name`. The built-in transport and factory both default to `sirix_authentication`.
 
 ## Extensibility
 

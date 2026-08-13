@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-08-13
+
+### Changed
+- **Breaking:** `AuthManagerInterface::login()` is now request- and response-aware. Replace `login($payload, $storage, $expiresAt)` with `login($request, $response, $payload, $expiresAt)`; it creates a token in the configured transport storage and attaches it to the response.
+- **Breaking:** authentication requires both a token and actor. An actor provider that returns `null` rejects the token.
+- **Breaking:** authentication middleware now propagates `StorageException` when a supplied token cannot be verified because storage is unavailable. `OptionalAuthenticateMiddleware` no longer passes through this failure, preventing `GuestOnlyMiddleware` from failing open.
+- `authentication.transport.storage` is validated by `TokenStorageProviderFactory`; an unknown storage now raises `InvalidConfigValueException` during service creation.
+- Invalid and expired session token records are discarded.
+- Unified the built-in cookie transport default name as `sirix_authentication`.
+- Unified the built-in cookie transport `secure` default as `true`;
+- Updated the supported `sirix/container-resolver` constraint to `^0.2 || ^1.0`.
+
+### Added
+- Added `authentication.bearer.header` and `authentication.bearer.scheme` settings for the built-in bearer transport.
+
+### Migration
+- Update login handlers to pass the current request and response to `AuthManagerInterface::login()` and use its returned response.
+- Ensure every accepted token can resolve to an `ActorInterface`; return `null` only to reject a token.
+- Ensure your error middleware handles `StorageException` for requests carrying a token.
+
 ## [1.0.1] - 2026-08-12
 
 ### Changed

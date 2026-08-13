@@ -15,6 +15,7 @@ use Sirix\Mezzio\Authentication\Storage\SessionTokenStorage;
 use SirixTest\Mezzio\Authentication\Support\InMemorySession;
 use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
+use function time;
 use function usleep;
 
 final class SessionTokenStorageTest extends TestCase
@@ -140,6 +141,48 @@ final class SessionTokenStorageTest extends TestCase
         $loaded = $sessionTokenStorage->load($token->getId(), $serverRequest);
 
         self::assertNull($loaded);
+    }
+
+    #[Test]
+    public function loadTreatsCurrentExpiryTimeAsExpired(): void
+    {
+        $sessionTokenStorage = new SessionTokenStorage();
+        $serverRequest       = $this->requestWithSession();
+
+        $token = $sessionTokenStorage->create([
+            'userId' => 42,
+        ], time(), $serverRequest);
+
+        self::assertNull($sessionTokenStorage->load($token->getId(), $serverRequest));
+    }
+
+    #[Test]
+    public function loadDiscardsCorruptedSessionRecord(): void
+    {
+        $sessionTokenStorage = new SessionTokenStorage();
+        $serverRequest       = $this->requestWithSession();
+        $tokenId             = 'corrupt-token';
+
+        $this->inMemorySession->set('_authentication.tokens.' . $tokenId, [
+            'payload'    => 'not-an-array',
+            'expires_at' => 'never',
+        ]);
+
+        self::assertNull($sessionTokenStorage->load($tokenId, $serverRequest));
+        self::assertNull($this->inMemorySession->get('_authentication.tokens.' . $tokenId));
+    }
+
+    #[Test]
+    public function loadDiscardsNonArraySessionRecord(): void
+    {
+        $sessionTokenStorage = new SessionTokenStorage();
+        $serverRequest       = $this->requestWithSession();
+        $tokenId             = 'corrupt-token';
+
+        $this->inMemorySession->set('_authentication.tokens.' . $tokenId, 'not-an-array');
+
+        self::assertNull($sessionTokenStorage->load($tokenId, $serverRequest));
+        self::assertFalse($this->inMemorySession->has('_authentication.tokens.' . $tokenId));
     }
 
     private function requestWithSession(): ServerRequestInterface

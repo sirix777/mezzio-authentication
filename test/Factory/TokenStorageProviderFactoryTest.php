@@ -8,6 +8,7 @@ use LogicException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
+use Sirix\ContainerResolver\Exception\InvalidConfigValueException;
 use Sirix\ContainerResolver\Exception\InvalidContainerServiceException;
 use Sirix\ContainerResolver\Exception\MissingContainerServiceException;
 use Sirix\Mezzio\Authentication\Contract\TokenInterface;
@@ -132,6 +133,27 @@ final class TokenStorageProviderFactoryTest extends TestCase
         ]);
 
         $this->expectException(MissingContainerServiceException::class);
+
+        $tokenStorageProviderFactory($arrayContainer);
+    }
+
+    #[Test]
+    public function throwsForUnknownTransportStorage(): void
+    {
+        $tokenStorageProviderFactory = new TokenStorageProviderFactory();
+        $arrayContainer              = new ArrayContainer([
+            'config'                => [
+                'authentication' => [
+                    'transport' => [
+                        'storage' => 'unknown',
+                    ],
+                ],
+            ],
+            NullTokenStorage::class => new NullTokenStorage(),
+        ]);
+
+        $this->expectException(InvalidConfigValueException::class);
+        $this->expectExceptionMessage('authentication.transport.storage');
 
         $tokenStorageProviderFactory($arrayContainer);
     }

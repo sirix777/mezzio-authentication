@@ -11,7 +11,6 @@ use Sirix\Mezzio\Authentication\Contract\AuthContextInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthenticatorInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
-use Sirix\Mezzio\Authentication\Exception\StorageException;
 
 use function is_string;
 
@@ -33,14 +32,10 @@ abstract readonly class AbstractAuthenticateMiddleware implements MiddlewareInte
         $token   = null;
 
         if (is_string($tokenId) && '' !== $tokenId) {
-            try {
-                $token = $this->tokenStorageProvider
-                    ->getStorage($this->storage)
-                    ->load($tokenId, $serverRequest)
-                ;
-            } catch (StorageException) {
-                $token = null;
-            }
+            $token = $this->tokenStorageProvider
+                ->getStorage($this->storage)
+                ->load($tokenId, $serverRequest)
+            ;
         }
 
         $authContext = $this->authenticator->authenticate($token);

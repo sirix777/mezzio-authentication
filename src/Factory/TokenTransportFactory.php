@@ -23,14 +23,17 @@ final class TokenTransportFactory
 
         return match ($configReader->stringEnum('authentication.transport.driver', ['bearer', 'cookie'], 'bearer')) {
             'cookie' => new CookieTokenTransport(
-                name: $configReader->nonEmptyString('authentication.cookie.name', 'mezzio_authentication'),
+                name: $configReader->nonEmptyString('authentication.cookie.name', 'sirix_authentication'),
                 path: $configReader->nonEmptyString('authentication.cookie.path', '/'),
                 domain: $configReader->optionalNonEmptyString('authentication.cookie.domain'),
                 secure: $configReader->bool('authentication.cookie.secure', false),
                 httpOnly: $configReader->bool('authentication.cookie.http_only', true),
                 sameSite: $configReader->nonEmptyString('authentication.cookie.same_site', 'Lax'),
             ),
-            default  => new BearerTokenTransport(),
+            default  => new BearerTokenTransport(
+                header: $configReader->nonEmptyString('authentication.bearer.header', 'Authorization'),
+                scheme: $configReader->nonEmptyString('authentication.bearer.scheme', 'Bearer'),
+            ),
         };
     }
 }

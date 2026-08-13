@@ -66,6 +66,16 @@ final class TokenStorageProviderFactory
             );
         }
 
+        $transportStorage = $configReader->nonEmptyString('authentication.transport.storage', $defaultStorage);
+        if (! isset($storages[$transportStorage])) {
+            throw InvalidConfigValueException::forAllowedValues(
+                'authentication.transport.storage',
+                array_keys($storages),
+                $transportStorage,
+                self::class,
+            );
+        }
+
         return new TokenStorageProvider($defaultStorage, $storages);
     }
 }

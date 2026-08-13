@@ -44,13 +44,25 @@ final readonly class SessionTokenStorage implements TokenStorageInterface
     {
         $session = $this->session($serverRequest);
 
-        $record = $session->get($this->key($id));
+        $key    = $this->key($id);
+        $record = $session->get($key);
         if (! is_array($record)) {
+            if ($session->has($key)) {
+                $session->unset($key);
+            }
+
             return null;
         }
 
         $expiresAt = $record['expires_at'] ?? null;
-        if (is_int($expiresAt) && $expiresAt < time()) {
+        $payload   = $record['payload'] ?? null;
+        if (! is_array($payload) || (null !== $expiresAt && ! is_int($expiresAt))) {
+            $session->unset($this->key($id));
+
+            return null;
+        }
+
+        if (is_int($expiresAt) && $expiresAt <= time()) {
             $session->unset($this->key($id));
 
             return null;
@@ -59,7 +71,7 @@ final readonly class SessionTokenStorage implements TokenStorageInterface
         return new AuthToken(
             $id,
             $this->storage,
-            is_array($record['payload'] ?? null) ? $record['payload'] : [],
+            $payload,
             is_int($expiresAt) ? $expiresAt : null,
         );
     }

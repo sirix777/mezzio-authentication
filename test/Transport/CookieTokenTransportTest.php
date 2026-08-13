@@ -34,7 +34,7 @@ final class CookieTokenTransportTest extends TestCase
         $serverRequest = $this->psr7Factory
             ->createServerRequest('GET', '/')
             ->withCookieParams([
-                'mezzio_authentication' => 'cookie-token',
+                'sirix_authentication' => 'cookie-token',
             ])
         ;
 
@@ -55,7 +55,7 @@ final class CookieTokenTransportTest extends TestCase
         $serverRequest = $this->psr7Factory
             ->createServerRequest('GET', '/')
             ->withCookieParams([
-                'mezzio_authentication' => '',
+                'sirix_authentication' => '',
             ])
         ;
 
@@ -87,10 +87,11 @@ final class CookieTokenTransportTest extends TestCase
         $result   = $this->cookieTokenTransport->attach($response, $token);
 
         $cookieHeader = $result->getHeaderLine('Set-Cookie');
-        self::assertStringContainsString('mezzio_authentication=', $cookieHeader);
+        self::assertStringContainsString('sirix_authentication=', $cookieHeader);
         self::assertStringContainsString('Path=/', $cookieHeader);
         self::assertStringContainsString('HttpOnly', $cookieHeader);
         self::assertStringContainsString('SameSite=Lax', $cookieHeader);
+        self::assertStringNotContainsString('Secure', $cookieHeader);
     }
 
     #[Test]
@@ -100,7 +101,7 @@ final class CookieTokenTransportTest extends TestCase
         $result   = $this->cookieTokenTransport->detach($response);
 
         $cookieHeader = $result->getHeaderLine('Set-Cookie');
-        self::assertStringContainsString('mezzio_authentication=deleted', $cookieHeader);
+        self::assertStringContainsString('sirix_authentication=deleted', $cookieHeader);
         self::assertStringContainsString('Expires=', $cookieHeader);
     }
 }

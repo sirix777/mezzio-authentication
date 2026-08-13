@@ -17,7 +17,7 @@ use function sprintf;
 final readonly class CookieTokenTransport implements TokenTransportInterface
 {
     public function __construct(
-        private string $name = 'mezzio_authentication',
+        private string $name = 'sirix_authentication',
         private string $path = '/',
         private ?string $domain = null,
         private bool $secure = false,

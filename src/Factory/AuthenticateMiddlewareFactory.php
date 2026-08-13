@@ -24,11 +24,13 @@ final class AuthenticateMiddlewareFactory
         $configReader      = ConfigReader::fromContainer($containerResolver);
         $defaultStorage    = $configReader->nonEmptyString('authentication.default_storage', 'null');
 
+        $transportStorage = $configReader->nonEmptyString('authentication.transport.storage', $defaultStorage);
+
         return new AuthenticateMiddleware(
             $containerResolver->get(AuthenticatorInterface::class),
             $containerResolver->get(TokenStorageProviderInterface::class),
             $containerResolver->get(TokenTransportInterface::class),
-            $configReader->nonEmptyString('authentication.transport.storage', $defaultStorage),
+            $transportStorage,
         );
     }
 }

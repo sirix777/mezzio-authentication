@@ -51,11 +51,14 @@ final class AuthenticationContextTest extends TestCase
     }
 
     #[Test]
-    public function checkReturnsTrueWhenTokenSet(): void
+    public function tokenWithoutActorProducesAnEmptyGuestContext(): void
     {
         $token                 = $this->createStub(TokenInterface::class);
         $authenticationContext = new AuthenticationContext($token);
 
-        self::assertTrue($authenticationContext->check());
+        self::assertFalse($authenticationContext->check());
+        self::assertTrue($authenticationContext->guest());
+        self::assertNull($authenticationContext->token());
+        self::assertNull($authenticationContext->actor());
     }
 }

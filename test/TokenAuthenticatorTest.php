@@ -47,4 +47,24 @@ final class TokenAuthenticatorTest extends TestCase
         self::assertSame($token, $authContext->token());
         self::assertSame($actor, $authContext->actor());
     }
+
+    #[Test]
+    public function rejectsTokenWhenActorProviderReturnsNull(): void
+    {
+        $token = $this->createStub(TokenInterface::class);
+
+        $actorProvider = $this->createMock(AuthActorProviderInterface::class);
+        $actorProvider
+            ->expects($this->once())
+            ->method('getActor')
+            ->with($token)
+            ->willReturn(null)
+        ;
+
+        $authContext = (new TokenAuthenticator($actorProvider))->authenticate($token);
+
+        self::assertTrue($authContext->guest());
+        self::assertNull($authContext->token());
+        self::assertNull($authContext->actor());
+    }
 }

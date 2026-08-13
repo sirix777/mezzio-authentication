@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sirix\Mezzio\Authentication;
 
+use Sirix\Mezzio\Authentication\Contract\ActorInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthActorProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthContextInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthenticatorInterface;
@@ -19,9 +20,10 @@ final readonly class TokenAuthenticator implements AuthenticatorInterface
             return new AuthenticationContext();
         }
 
-        return new AuthenticationContext(
-            $token,
-            $this->authActorProvider->getActor($token),
-        );
+        $actor = $this->authActorProvider->getActor($token);
+
+        return $actor instanceof ActorInterface
+            ? new AuthenticationContext($token, $actor)
+            : new AuthenticationContext();
     }
 }

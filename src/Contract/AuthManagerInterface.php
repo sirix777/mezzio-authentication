@@ -12,7 +12,12 @@ interface AuthManagerInterface
     /**
      * @param array<string, mixed> $payload
      */
-    public function login(array $payload, ?string $storage = null, ?int $expiresAt = null): TokenInterface;
+    public function login(
+        ServerRequestInterface $serverRequest,
+        ResponseInterface $response,
+        array $payload,
+        ?int $expiresAt = null,
+    ): ResponseInterface;
 
     public function logout(ServerRequestInterface $serverRequest, ResponseInterface $response): ResponseInterface;
 

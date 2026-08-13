@@ -177,7 +177,7 @@ final class AuthenticateMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function treatsStorageErrorsAsUnauthenticatedRequest(): void
+    public function failsClosedWhenStorageCannotBeRead(): void
     {
         $provider               = $this->createStub(AuthActorProviderInterface::class);
         $authenticateMiddleware = new AuthenticateMiddleware(
@@ -194,13 +194,8 @@ final class AuthenticateMiddlewareTest extends TestCase
             ->withHeader('Authorization', 'Bearer broken-token')
         ;
 
-        $this->expectException(AuthenticationException::class);
-
-        try {
-            $authenticateMiddleware->process($serverRequest, $this->createUnreachableHandler());
-        } catch (StorageException $exception) {
-            self::fail('StorageException should not leak from authentication middleware: ' . $exception->getMessage());
-        }
+        $this->expectException(StorageException::class);
+        $authenticateMiddleware->process($serverRequest, $this->createUnreachableHandler());
     }
 
     private function createUnreachableHandler(): RequestHandlerInterface

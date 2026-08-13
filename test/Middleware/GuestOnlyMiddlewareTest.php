@@ -11,6 +11,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Sirix\Mezzio\Authentication\AuthenticationAttributes;
 use Sirix\Mezzio\Authentication\AuthenticationContext;
+use Sirix\Mezzio\Authentication\Contract\ActorInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Exception\AlreadyAuthenticatedException;
 use Sirix\Mezzio\Authentication\Middleware\GuestOnlyMiddleware;
@@ -55,7 +56,10 @@ final class GuestOnlyMiddlewareTest extends TestCase
     public function throwsWhenUserIsAuthenticated(): void
     {
         $guestOnlyMiddleware   = new GuestOnlyMiddleware();
-        $authenticationContext = new AuthenticationContext($this->createStub(TokenInterface::class));
+        $authenticationContext = new AuthenticationContext(
+            $this->createStub(TokenInterface::class),
+            $this->createStub(ActorInterface::class),
+        );
 
         $serverRequest = $this->psr7Factory
             ->createServerRequest('GET', '/')
