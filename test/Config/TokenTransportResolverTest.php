@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SirixTest\Mezzio\Authentication\Config;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Sirix\ContainerResolver\ConfigReader;
@@ -21,6 +22,63 @@ use stdClass;
 
 final class TokenTransportResolverTest extends TestCase
 {
+    /**
+     * @param array<string, mixed> $configuration
+     */
+    #[Test]
+    #[DataProvider('invalidProfileConfigurations')]
+    public function rejectsInvalidProfileConfigurationWithTheCompleteSafePath(array $configuration, string $path): void
+    {
+        [$profileConfiguration] = $this->resolver($configuration);
+
+        $this->expectException(InvalidConfigValueException::class);
+        $this->expectExceptionMessage($path);
+
+        $profileConfiguration->profiles();
+    }
+
+    /**
+     * @return iterable<string, array{array<string, mixed>, string}>
+     */
+    public static function invalidProfileConfigurations(): iterable
+    {
+        yield 'empty name' => [[
+            'authentication' => [
+                'profiles' => [
+                    '' => [],
+                ],
+            ],
+        ], 'authentication.profiles.'];
+
+        yield 'non-map definition' => [[
+            'authentication' => [
+                'profiles' => [
+                    'api' => false,
+                ],
+            ],
+        ], 'authentication.profiles.api'];
+
+        yield 'missing transport' => [[
+            'authentication' => [
+                'profiles' => [
+                    'api' => [
+                        'storage' => 'redis',
+                    ],
+                ],
+            ],
+        ], 'authentication.profiles.api.transport'];
+
+        yield 'missing storage' => [[
+            'authentication' => [
+                'profiles' => [
+                    'api' => [
+                        'transport' => 'bearer',
+                    ],
+                ],
+            ],
+        ], 'authentication.profiles.api.storage'];
+    }
+
     #[Test]
     public function profileCookieOptionsOverrideGlobalOptionsWithoutLeakingBetweenProfiles(): void
     {

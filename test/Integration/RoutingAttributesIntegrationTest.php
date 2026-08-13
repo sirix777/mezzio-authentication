@@ -4,14 +4,31 @@ declare(strict_types=1);
 
 namespace SirixTest\Mezzio\Authentication\Integration;
 
+use LogicException;
 use Mezzio\Router\Route;
 use Mezzio\Router\RouteCollectorInterface;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use Sirix\Mezzio\Authentication\AuthenticationAttributes;
+use Sirix\Mezzio\Authentication\AuthenticationContext;
+use Sirix\Mezzio\Authentication\Contract\ActorInterface;
+use Sirix\Mezzio\Authentication\Contract\AuthenticationProfileProviderInterface;
+use Sirix\Mezzio\Authentication\Contract\AuthenticatorInterface;
+use Sirix\Mezzio\Authentication\Contract\TokenInterface;
+use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
+use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
+use Sirix\Mezzio\Authentication\Factory\AuthenticationProfileProviderFactory;
 use Sirix\Mezzio\Authentication\Middleware\AuthenticateMiddleware;
 use Sirix\Mezzio\Authentication\Middleware\GuestOnlyMiddleware;
 use Sirix\Mezzio\Authentication\Middleware\OptionalAuthenticateMiddleware;
+use Sirix\Mezzio\Authentication\Storage\NullTokenStorage;
+use Sirix\Mezzio\Authentication\TokenStorageProvider;
+use Sirix\Mezzio\Authentication\Transport\BearerTokenTransport;
 use Sirix\Mezzio\Routing\Attributes\AttributeRouteProvider;
 use Sirix\Mezzio\Routing\Attributes\Cache\NullRouteRegistrarCache;
 use Sirix\Mezzio\Routing\Attributes\Cache\RouteCacheGenerator;
@@ -31,6 +48,8 @@ use Sirix\Mezzio\Routing\Attributes\ServiceMiddlewareResolver;
 use SirixTest\Mezzio\Authentication\Integration\Fixture\AuthenticatedRouteHandler;
 use SirixTest\Mezzio\Authentication\Integration\Fixture\GuestOnlyRouteHandler;
 use SirixTest\Mezzio\Authentication\Support\ArrayContainer;
+use SirixTest\Mezzio\Authentication\Support\InMemoryTokenStorage;
+use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
 use function file_exists;
 use function sys_get_temp_dir;
@@ -99,6 +118,160 @@ final class RoutingAttributesIntegrationTest extends TestCase
         $this->assertRegisteredRoutes($cachedCollector->getRoutes());
     }
 
+    #[Test]
+    public function nonCachedAttributeRoutesUseTheApiDefaultProfileAndManualNamedMiddleware(): void
+    {
+        $this->assertExecutableProfileRoutes(new NullRouteRegistrarCache());
+    }
+
+    #[Test]
+    public function cachedAttributeRoutesUseTheApiDefaultProfileAndManualNamedMiddleware(): void
+    {
+        $compiledRouteRegistrarCache     = $this->createCompiledCache();
+        $container                       = $this->profileRouteContainer();
+        $routeCollector                  = $this->createCollector();
+
+        $this->createProvider(
+            [AuthenticatedRouteHandler::class, GuestOnlyRouteHandler::class],
+            $compiledRouteRegistrarCache,
+            $this->createExtractor(),
+            $container,
+        )->registerRoutes($routeCollector);
+
+        $cachedCollector = $this->createCollector();
+        $this->createProvider([], $compiledRouteRegistrarCache, $this->createMock(AttributeRouteExtractorInterface::class), $container)
+            ->registerRoutes($cachedCollector)
+        ;
+
+        $this->assertExecutableProfileRoutes($compiledRouteRegistrarCache, $container, $cachedCollector);
+    }
+
+    private function assertExecutableProfileRoutes(
+        CompiledRouteRegistrarCache|NullRouteRegistrarCache $cache,
+        ?ContainerInterface $container = null,
+        ?RouteCollectorInterface $routeCollector = null,
+    ): void {
+        $container ??= $this->profileRouteContainer();
+        $routeCollector ??= $this->createCollector();
+
+        if ($cache instanceof NullRouteRegistrarCache) {
+            $this->createProvider(
+                [AuthenticatedRouteHandler::class, GuestOnlyRouteHandler::class],
+                $cache,
+                $this->createExtractor(),
+                $container,
+            )->registerRoutes($routeCollector);
+        }
+
+        $psr7Factory   = new Psr7Factory();
+        $routes        = $routeCollector->getRoutes();
+        $route         = $this->routeByName($routes, 'integration.authenticated');
+        $guestOnly     = $this->routeByName($routes, 'integration.guest');
+
+        $route->process(
+            $psr7Factory->createServerRequest('GET', '/integration/authenticated')->withHeader('Authorization', 'Bearer redis-1'),
+            new UnreachableRequestHandler(),
+        );
+        $guestOnly->process(
+            $psr7Factory->createServerRequest('GET', '/integration/guest')->withCookieParams([
+                'web_auth' => 'web-credential',
+            ]),
+            new UnreachableRequestHandler(),
+        );
+
+        /** @var AttributeRouteRequestHandler $authenticatedHandler */
+        $authenticatedHandler = $container->get(AuthenticatedRouteHandler::class);
+
+        /** @var AttributeRouteRequestHandler $guestOnlyHandler */
+        $guestOnlyHandler = $container->get(GuestOnlyRouteHandler::class);
+
+        self::assertSame('redis', $authenticatedHandler->token()?->getStorage());
+        self::assertNull($guestOnlyHandler->token());
+
+        /** @var AuthenticationProfileProviderInterface $profiles */
+        $profiles                      = $container->get(AuthenticationProfileProviderInterface::class);
+        $attributeRouteRequestHandler  = new AttributeRouteRequestHandler();
+        $manualRouteCollector          = $this->createCollector();
+        $middlewarePipelineFactory     = new MiddlewarePipelineFactory(
+            new ArrayContainer([
+                'manual.web.authentication'    => $profiles->get('web')->authenticateMiddleware(),
+                'manual.web.handler'           => $attributeRouteRequestHandler,
+            ]),
+            new ServiceMiddlewareResolver(),
+        );
+        $manualRouteCollector->get(
+            '/manual/web',
+            $middlewarePipelineFactory->createFromSignature(
+                'manual.web.handler',
+                'handle',
+                ['manual.web.authentication'],
+            ),
+            'integration.manual.web',
+        );
+
+        $this->routeByName($manualRouteCollector->getRoutes(), 'integration.manual.web')->process(
+            $psr7Factory->createServerRequest('GET', '/manual/web')->withCookieParams([
+                'web_auth' => 'web-1',
+            ]),
+            new UnreachableRequestHandler(),
+        );
+
+        self::assertSame('web', $attributeRouteRequestHandler->token()?->getStorage());
+    }
+
+    private function profileRouteContainer(): ContainerInterface
+    {
+        $apiStorage = new InMemoryTokenStorage('redis');
+        $apiStorage->create([]);
+        $webStorage = new InMemoryTokenStorage('web');
+        $webStorage->create([]);
+        $actor         = $this->createStub(ActorInterface::class);
+        $authenticator = new class($actor) implements AuthenticatorInterface {
+            public function __construct(private readonly ActorInterface $actor) {}
+
+            public function authenticate(?TokenInterface $token): AuthenticationContext
+            {
+                return new AuthenticationContext($token, $token instanceof TokenInterface ? $this->actor : null);
+            }
+        };
+        $profiles = (new AuthenticationProfileProviderFactory())(new ArrayContainer([
+            'config'                             => [
+                'authentication' => [
+                    'default_profile' => 'api',
+                    'profiles'        => [
+                        'web' => [
+                            'transport'         => 'cookie',
+                            'storage'           => 'web',
+                            'transport_options' => [
+                                'name' => 'web_auth',
+                            ],
+                        ],
+                        'api' => [
+                            'transport' => 'bearer',
+                            'storage'   => 'redis',
+                        ],
+                    ],
+                ],
+            ],
+            AuthenticatorInterface::class        => $authenticator,
+            TokenStorageProviderInterface::class => new TokenStorageProvider('null', [
+                'null'  => new NullTokenStorage(),
+                'web'   => $webStorage,
+                'redis' => $apiStorage,
+            ]),
+            TokenTransportInterface::class       => new BearerTokenTransport(),
+        ]));
+
+        return new ArrayContainer([
+            AuthenticationProfileProviderInterface::class  => $profiles,
+            AuthenticateMiddleware::class                  => $profiles->getDefaultProfile()->authenticateMiddleware(),
+            OptionalAuthenticateMiddleware::class          => $profiles->getDefaultProfile()->optionalAuthenticateMiddleware(),
+            GuestOnlyMiddleware::class                     => new GuestOnlyMiddleware(),
+            AuthenticatedRouteHandler::class               => new AttributeRouteRequestHandler(),
+            GuestOnlyRouteHandler::class                   => new AttributeRouteRequestHandler(),
+        ]);
+    }
+
     /**
      * @param list<Route> $routes
      */
@@ -144,12 +317,13 @@ final class RoutingAttributesIntegrationTest extends TestCase
         array $classes,
         CompiledRouteRegistrarCache|NullRouteRegistrarCache $cache,
         AttributeRouteExtractorInterface $attributeRouteExtractor,
+        ?ContainerInterface $container = null,
     ): AttributeRouteProvider {
         return new AttributeRouteProvider(
             $attributeRouteExtractor,
             $classes,
             new DuplicateRouteResolver(),
-            new MiddlewarePipelineFactory(new ArrayContainer(), new ServiceMiddlewareResolver()),
+            new MiddlewarePipelineFactory($container ?? new ArrayContainer(), new ServiceMiddlewareResolver()),
             $cache,
         );
     }
@@ -231,5 +405,34 @@ final class RoutingAttributesIntegrationTest extends TestCase
                 return $this->routes;
             }
         };
+    }
+}
+
+/** @internal */
+final class AttributeRouteRequestHandler implements RequestHandlerInterface
+{
+    public ?ServerRequestInterface $request = null;
+
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        $this->request = $request;
+
+        return (new Psr7Factory())->createResponse(200);
+    }
+
+    public function token(): ?TokenInterface
+    {
+        $token = $this->request?->getAttribute(AuthenticationAttributes::Token->value);
+
+        return $token instanceof TokenInterface ? $token : null;
+    }
+}
+
+/** @internal */
+final class UnreachableRequestHandler implements RequestHandlerInterface
+{
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        throw new LogicException('Route handler should resolve from the route pipeline.');
     }
 }

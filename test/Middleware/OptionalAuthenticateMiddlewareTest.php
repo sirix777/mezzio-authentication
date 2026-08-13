@@ -10,8 +10,10 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Sirix\Mezzio\Authentication\AuthenticationAttributes;
+use Sirix\Mezzio\Authentication\Contract\ActorInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthActorProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthContextInterface;
+use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Exception\StorageException;
 use Sirix\Mezzio\Authentication\Middleware\OptionalAuthenticateMiddleware;
 use Sirix\Mezzio\Authentication\Storage\NullTokenStorage;
@@ -19,6 +21,7 @@ use Sirix\Mezzio\Authentication\Storage\SessionTokenStorage;
 use Sirix\Mezzio\Authentication\TokenAuthenticator;
 use Sirix\Mezzio\Authentication\TokenStorageProvider;
 use Sirix\Mezzio\Authentication\Transport\BearerTokenTransport;
+use SirixTest\Mezzio\Authentication\Support\InMemoryTokenStorage;
 use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
 final class OptionalAuthenticateMiddlewareTest extends TestCase
@@ -128,5 +131,54 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
                 }
             },
         );
+    }
+
+    #[Test]
+    public function apiOptionalMiddlewareIgnoresCookiesAndUsesOnlyTheBearerStorage(): void
+    {
+        $webStorage    = new InMemoryTokenStorage('web');
+        $apiStorage    = new InMemoryTokenStorage('api');
+        $webToken      = $webStorage->create([]);
+        $apiToken      = $apiStorage->create([]);
+        $actor         = $this->createStub(ActorInterface::class);
+        $actorProvider = $this->createStub(AuthActorProviderInterface::class);
+        $actorProvider->method('getActor')->willReturn($actor);
+        $optionalAuthenticateMiddleware = new OptionalAuthenticateMiddleware(
+            new TokenAuthenticator($actorProvider),
+            new TokenStorageProvider('web', [
+                'web' => $webStorage,
+                'api' => $apiStorage,
+            ]),
+            new BearerTokenTransport(),
+            'api',
+        );
+        $handler = new class($this->psr7Factory) implements RequestHandlerInterface {
+            public ?TokenInterface $token = null;
+
+            public function __construct(private readonly Psr7Factory $psr7Factory) {}
+
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                $token       = $request->getAttribute(AuthenticationAttributes::Token->value);
+                $this->token = $token instanceof TokenInterface ? $token : null;
+
+                return $this->psr7Factory->createResponse(200);
+            }
+        };
+
+        $response = $optionalAuthenticateMiddleware->process(
+            $this->psr7Factory
+                ->createServerRequest('GET', '/')
+                ->withCookieParams([
+                    'web_auth' => $webToken->getId(),
+                ])
+                ->withHeader('Authorization', 'Bearer ' . $apiToken->getId()),
+            $handler,
+        );
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame($apiToken, $handler->token);
+        self::assertSame(['create'], $webStorage->operations);
+        self::assertSame(['create', 'load'], $apiStorage->operations);
     }
 }

@@ -16,10 +16,13 @@ use Sirix\Mezzio\Authentication\Contract\AuthenticatorInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
+use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
 use Sirix\Mezzio\Authentication\Factory\AuthenticationProfileProviderFactory;
 use Sirix\Mezzio\Authentication\Storage\NullTokenStorage;
 use Sirix\Mezzio\Authentication\Storage\SessionTokenStorage;
 use Sirix\Mezzio\Authentication\TokenStorageProvider;
+use Sirix\Mezzio\Authentication\Transport\BearerTokenTransport;
+use Sirix\Mezzio\Authentication\Transport\CookieTokenTransport;
 use SirixTest\Mezzio\Authentication\Support\ArrayContainer;
 use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 use stdClass;
@@ -113,7 +116,9 @@ final class AuthenticationProfileProviderFactoryTest extends TestCase
             ],
         ], $this->storageProvider([
             'session' => new SessionTokenStorage(),
-        ]));
+        ]), [
+            TokenTransportInterface::class => new CookieTokenTransport('legacy_auth'),
+        ]);
 
         self::assertSame('session', $authenticationProfileProvider->getDefaultProfile()->storageName());
         self::assertSame('legacy-token', $authenticationProfileProvider->getDefaultProfile()->transport()->fetch(
@@ -121,6 +126,18 @@ final class AuthenticationProfileProviderFactoryTest extends TestCase
                 'legacy_auth' => 'legacy-token',
             ]),
         ));
+    }
+
+    #[Test]
+    public function usesTheContainerProvidedTransportForTheLegacyDefaultProfile(): void
+    {
+        $customTransport = $this->createStub(TokenTransportInterface::class);
+
+        $authenticationProfileProvider = $this->createProvider([], $this->storageProvider(), [
+            TokenTransportInterface::class => $customTransport,
+        ]);
+
+        self::assertSame($customTransport, $authenticationProfileProvider->getDefaultProfile()->transport());
     }
 
     #[Test]
@@ -163,6 +180,37 @@ final class AuthenticationProfileProviderFactoryTest extends TestCase
                 ],
             ],
         ], $this->storageProvider());
+    }
+
+    #[Test]
+    public function failsEagerlyForAnInvalidUnusedProfileWithoutEchoingItsConfiguredValue(): void
+    {
+        try {
+            $this->createProvider([
+                'authentication' => [
+                    'default_profile' => 'web',
+                    'profiles'        => [
+                        'web' => [
+                            'transport' => 'bearer',
+                            'storage'   => 'null',
+                        ],
+                        'api' => [
+                            'transport'         => 'bearer',
+                            'storage'           => 'null',
+                            'transport_options' => [
+                                'header' => ['Authorization secret'],
+                            ],
+                        ],
+                    ],
+                ],
+            ], $this->storageProvider());
+            self::fail('Expected the invalid unused profile to fail during provider construction.');
+        } catch (InvalidConfigValueException $exception) {
+            self::assertStringContainsString('authentication.profiles.api.transport_options.header', $exception->getMessage());
+            self::assertStringNotContainsString('Authorization secret', $exception->getMessage());
+            self::assertStringNotContainsString('Cookie secret', $exception->getMessage());
+            self::assertStringNotContainsString('payload secret', $exception->getMessage());
+        }
     }
 
     #[Test]
@@ -219,6 +267,7 @@ final class AuthenticationProfileProviderFactoryTest extends TestCase
             'config'                             => $configuration,
             TokenStorageProviderInterface::class => $tokenStorageProvider,
             AuthenticatorInterface::class        => $this->createStub(AuthenticatorInterface::class),
+            TokenTransportInterface::class       => new BearerTokenTransport(),
             ...$services,
         ]));
     }

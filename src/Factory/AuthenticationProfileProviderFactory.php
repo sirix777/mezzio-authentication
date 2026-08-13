@@ -44,6 +44,7 @@ final class AuthenticationProfileProviderFactory
         $tokenStorageProvider               = $containerResolver->get(TokenStorageProviderInterface::class);
         $authenticator                      = $containerResolver->get(AuthenticatorInterface::class);
         $tokenTransportResolver             = new TokenTransportResolver($container, $configReader, $authenticationProfileConfiguration);
+        $legacyTokenTransport               = $containerResolver->get(TokenTransportInterface::class);
 
         $authenticationProfileConfiguration->customTransportServiceIds();
 
@@ -65,7 +66,7 @@ final class AuthenticationProfileProviderFactory
 
         $authenticationProfile = $this->createLegacyProfile(
             $configReader,
-            $tokenTransportResolver,
+            $legacyTokenTransport,
             $authenticator,
             $tokenStorageProvider,
             $containerResolver,
@@ -90,7 +91,7 @@ final class AuthenticationProfileProviderFactory
 
     private function createLegacyProfile(
         ConfigReader $configReader,
-        TokenTransportResolver $tokenTransportResolver,
+        TokenTransportInterface $tokenTransport,
         AuthenticatorInterface $authenticator,
         TokenStorageProviderInterface $tokenStorageProvider,
         ContainerResolver $containerResolver,
@@ -102,7 +103,7 @@ final class AuthenticationProfileProviderFactory
 
         return $this->createProfile(
             new AuthenticationProfileDefinition('legacy', 'legacy', $transportStorage, [], false),
-            $tokenTransportResolver->legacyTransport(),
+            $tokenTransport,
             $authenticator,
             $tokenStorageProvider,
         );

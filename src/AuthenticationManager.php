@@ -13,6 +13,7 @@ use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
+use Sirix\Mezzio\Authentication\Exception\TokenStorageMismatchException;
 
 final readonly class AuthenticationManager implements AuthManagerInterface
 {
@@ -37,6 +38,10 @@ final readonly class AuthenticationManager implements AuthManagerInterface
     {
         $token = $this->token($serverRequest);
         if ($token instanceof TokenInterface) {
+            if (null !== $this->storage && $token->getStorage() !== $this->storage) {
+                throw TokenStorageMismatchException::forStorage($this->storage, $token->getStorage());
+            }
+
             $this->storage()->delete($token, $serverRequest);
         }
 
