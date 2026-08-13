@@ -157,4 +157,56 @@ final class TokenStorageProviderFactoryTest extends TestCase
 
         $tokenStorageProviderFactory($arrayContainer);
     }
+
+    #[Test]
+    public function validatesStorageReferencesForEveryConfiguredProfile(): void
+    {
+        $tokenStorageProviderFactory = new TokenStorageProviderFactory();
+        $arrayContainer              = new ArrayContainer([
+            'config'                => [
+                'authentication' => [
+                    'profiles' => [
+                        'web' => [
+                            'transport' => 'cookie',
+                            'storage'   => 'null',
+                        ],
+                        'api' => [
+                            'transport' => 'bearer',
+                            'storage'   => 'unknown',
+                        ],
+                    ],
+                ],
+            ],
+            NullTokenStorage::class => new NullTokenStorage(),
+        ]);
+
+        $this->expectException(InvalidConfigValueException::class);
+        $this->expectExceptionMessage('authentication.profiles.api.storage');
+
+        $tokenStorageProviderFactory($arrayContainer);
+    }
+
+    #[Test]
+    public function includesTheProfilePathWhenSessionStorageIsUnavailable(): void
+    {
+        $tokenStorageProviderFactory = new TokenStorageProviderFactory();
+        $arrayContainer              = new ArrayContainer([
+            'config'                => [
+                'authentication' => [
+                    'profiles' => [
+                        'web' => [
+                            'transport' => 'cookie',
+                            'storage'   => 'session',
+                        ],
+                    ],
+                ],
+            ],
+            NullTokenStorage::class => new NullTokenStorage(),
+        ]);
+
+        $this->expectException(MissingContainerServiceException::class);
+        $this->expectExceptionMessage('authentication.profiles.web.storage');
+
+        $tokenStorageProviderFactory($arrayContainer);
+    }
 }
