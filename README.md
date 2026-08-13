@@ -25,10 +25,22 @@ Add to `config/autoload/authentication.global.php`:
 ```php
 return [
     'authentication' => [
-        'default_storage' => 'session',
-        'transport' => [
-            'driver' => 'bearer',
-            'storage' => 'session',
+        'default_profile' => 'web',
+        'profiles' => [
+            'web' => [
+                'transport' => 'cookie',
+                'storage' => 'session',
+                'transport_options' => [
+                    'name' => 'web_authentication',
+                ],
+            ],
+            'api' => [
+                'transport' => 'bearer',
+                'storage' => 'redis',
+                'transport_options' => [
+                    'header' => 'X-Api-Authorization',
+                ],
+            ],
         ],
         'bearer' => [
             'header' => 'Authorization',
@@ -38,14 +50,18 @@ return [
             'prefix' => '_authentication.tokens.',
         ],
         'storages' => [
-            // optional named storage mapping: <name> => <container service id>
-            // 'redis' => App\Authentication\Storage\RedisTokenStorage::class,
+            'redis' => App\Authentication\Storage\RedisTokenStorage::class,
+        ],
+        'transports' => [
+            // optional named custom transport: <name> => <container service id>
+            // 'partner_header' => App\Authentication\Transport\PartnerHeaderTransport::class,
         ],
         'cookie' => [
             'name' => 'sirix_authentication',
             'path' => '/',
             'domain' => null,
-            'secure' => false,
+            // Production cookie profiles must require HTTPS.
+            'secure' => true,
             'http_only' => true,
             'same_site' => 'Lax',
         ],
@@ -57,6 +73,35 @@ return [
 ];
 ```
 
+Each entry in `profiles` pairs one transport with one registered storage. `default_profile` is the explicit profile used by the existing unqualified services (`AuthManagerInterface`, `AuthenticateMiddleware`, and `OptionalAuthenticateMiddleware`). It must name an entry in `profiles`; it is never inferred from configuration order.
+
+Register every application-provided storage and transport as a container service. For example, a Redis storage implements `TokenStorageInterface` and is registered under the `redis` storage mapping above. A custom transport implements `TokenTransportInterface`, is registered under `authentication.transports`, and is selected by that mapping name. Do not carry authentication tokens in URL query parameters: URLs can be exposed through logs, browser history, referrers, caches, and monitoring. Prefer a purpose-specific HTTPS header transport instead:
+
+```php
+'profiles' => [
+    'partner' => [
+        'transport' => 'partner_header',
+        'storage' => 'redis',
+    ],
+],
+'transports' => [
+    'partner_header' => App\Authentication\Transport\PartnerHeaderTransport::class,
+],
+```
+
+The mapped service IDs must also be registered by the application, typically in its dependency configuration:
+
+```php
+'dependencies' => [
+    'factories' => [
+        App\Authentication\Storage\RedisTokenStorage::class => App\Authentication\Storage\RedisTokenStorageFactory::class,
+        App\Authentication\Transport\PartnerHeaderTransport::class => App\Authentication\Transport\PartnerHeaderTransportFactory::class,
+    ],
+],
+```
+
+`bearer` and `cookie` are reserved built-in transport names and cannot be replaced through `authentication.transports`. `transport_options` is supported only for these built-ins. For each profile, its options override the corresponding global `authentication.bearer` or `authentication.cookie` settings; omitted options inherit the global value. Options are isolated between profiles, so two cookie profiles can use different names and two bearer profiles can use different headers. Custom transport construction remains the application's responsibility and therefore rejects `transport_options`.
+
 ### 2. Session Setup (for SessionTokenStorage)
 
 ```bash
@@ -67,7 +112,7 @@ Register `Mezzio\Session\SessionMiddleware` in your pipeline **before** authenti
 
 Also configure a session persistence adapter for your application (for example cookie-based or cache-backed persistence), per `mezzio/mezzio-session` documentation.
 
-If `mezzio/mezzio-session` is not installed, `SessionTokenStorage` is not wired and the package uses `NullTokenStorage` as fallback.
+If `mezzio/mezzio-session` is not installed, `SessionTokenStorage` is not wired. `NullTokenStorage` is the fallback only when no configuration explicitly selects `session`; a named or legacy configuration that selects `session` fails container construction until session support is installed.
 
 If a token id is provided by transport but its storage backend is unavailable for that request (for example a missing session attribute), authentication middleware stops the request with `StorageException`. It never treats an unverifiable request as a guest request; this is especially important for `#[GuestOnly]` routes.
 
@@ -105,6 +150,39 @@ final class ProfileHandler implements RequestHandlerInterface
 }
 ```
 
+### 4. Use a Named Profile
+
+For a route that must use a non-default profile, obtain it from `AuthenticationProfileProviderInterface` and register the supplied middleware instance. This stays PSR-11-compatible and does not require dynamic service IDs.
+
+```php
+use Sirix\Mezzio\Authentication\Contract\AuthenticationProfileProviderInterface;
+
+/** @var AuthenticationProfileProviderInterface $profiles */
+$profiles = $container->get(AuthenticationProfileProviderInterface::class);
+$api      = $profiles->get('api');
+
+$app->get('/api/me', [
+    $api->authenticateMiddleware(),
+    ProfileHandler::class,
+], 'api.profile');
+```
+
+Use the same profile bundle for its lifecycle operations. Calling `login()` or `logout()` through `$api->manager()` uses the API profile's bearer transport and Redis storage; the analogous `$profiles->get('web')->manager()` uses the web profile's cookie transport and session storage.
+
+```php
+$api = $profiles->get('api');
+
+$response = $api->manager()->login($request, $response, [
+    'userId' => 1,
+    'roles' => ['api-user'],
+]);
+
+// After the API authentication middleware established the request context:
+$response = $api->manager()->logout($request, $response);
+```
+
+`#[Authenticated]` and `#[GuestOnly]` continue to select only the default profile. Use manual route registration for a named profile in this first version.
+
 ## Core Concepts
 
 ### AuthManager
@@ -127,6 +205,8 @@ $manager->token($request);  // TokenInterface from request auth context
 $response = $manager->logout($request, $response); // detaches token from transport
 ```
 
+For profile-aware applications, resolve the manager from the selected `AuthenticationProfileInterface`; do not mix a context established by one profile with another profile's manager. Logout checks the token storage before deleting or detaching, and fails closed on a mismatch.
+
 For HTTP handlers and middleware, prefer `AuthManagerInterface::actor($request)` or the documented request attributes. Do not resolve a "current user" singleton from the container for per-request authorization.
 
 ### Token Storage
@@ -136,11 +216,11 @@ Two built-in storage backends:
 - `NullTokenStorage` — tokens are generated but not persisted (useful for testing only; issued tokens cannot be authenticated later).
 - `SessionTokenStorage` — tokens stored in session via `mezzio/mezzio-session`.
 
-When `mezzio/mezzio-session` is unavailable, only `NullTokenStorage` is active.
+When `mezzio/mezzio-session` is unavailable, `NullTokenStorage` is available only as the default when no configuration explicitly selects `session`; an explicit `session` storage selection fails container construction.
 
 Custom storage implements `TokenStorageInterface`.
 
-The single storage used to issue and read transported tokens is `authentication.transport.storage` (or `authentication.default_storage` when it is omitted). The token-storage provider factory validates that storage during container construction. Do not issue tokens through an unrelated storage: token ids do not contain a storage discriminator.
+Each profile uses its configured storage to issue, read, and delete transported tokens. The token-storage provider factory validates every configured profile storage during container construction. Do not issue tokens through an unrelated storage: token ids do not contain a storage discriminator.
 
 ### Token Transport
 
@@ -150,6 +230,8 @@ Extracts token ID from requests:
 - `CookieTokenTransport` — cookie-based transport.
 
 Custom transport implements `TokenTransportInterface`.
+
+The package never probes multiple transports or storages to find a token. A cookie credential is processed only by a cookie profile, and a bearer credential only by a bearer profile. Select the profile explicitly when registering the route.
 
 ### Actors
 
@@ -210,6 +292,8 @@ Stable attribute names:
 
 These attributes are the package's current-request state boundary and are safe for long-running workers because they live on the PSR-7 request instance.
 
+Only one authentication profile may establish this context on a request. The attributes have stable shared names, so applying authentication middleware from multiple profiles to one request would replace the earlier context and is unsupported.
+
 ### RBAC Integration
 
 `sirix/mezzio-rbac` can authorize the current request by reading the actor from:
@@ -227,9 +311,17 @@ The authentication package does not depend on RBAC. The integration contract is 
 
 When using session storage, `Mezzio\Session\SessionMiddleware` must run before authentication middleware.
 
-Cookie transport options are intentionally passed through without package-level policy validation, so applications retain control over deployment-specific settings. In production, use `secure: true` over HTTPS, keep `http_only: true`, choose a `same_site` policy appropriate for the application flow, and provide CSRF protection where cookies are sent automatically. `SameSite=None` requires `Secure` in browsers, so configure both together.
+Cookie transport options are intentionally passed through without package-level policy validation, so applications retain control over deployment-specific settings. The historical `authentication.cookie.secure` default is `false` for compatibility: set it to `true` for every HTTPS production deployment, enable HSTS, and use `false` only in an explicit local HTTP-development override. Keep `http_only: true`, choose a `same_site` policy appropriate for the application flow, and provide CSRF protection where cookies are sent automatically. `SameSite=None` requires `Secure` in browsers, so configure both together.
 
 When using the container integration, configure the cookie name with `authentication.cookie.name`. The built-in transport and factory both default to `sirix_authentication`.
+
+Never log tokens, `Authorization` headers, cookies, or authentication payloads. Treat them as credentials even in development logs and exception context.
+
+### Legacy Configuration and Default Compatibility
+
+Existing applications can continue to use `authentication.default_storage`, `authentication.transport.driver`, and `authentication.transport.storage` without defining `profiles`. In that case, the package creates a synthetic legacy default profile from those settings, and existing service IDs, direct concrete constructors, request attributes, and routing attributes retain their behavior.
+
+If `default_profile` is configured, it must identify a named profile and becomes the default for those existing unqualified services. Named profiles remain available only through `AuthenticationProfileProviderInterface`; no fallback occurs for an unknown name or malformed profile configuration.
 
 ## Extensibility
 
@@ -275,7 +367,7 @@ final readonly class RedisTokenStorage implements TokenStorageInterface
 ```php
 use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
 
-final readonly class QueryParamTransport implements TokenTransportInterface
+final readonly class PartnerHeaderTransport implements TokenTransportInterface
 {
     // implement fetch(), attach(), detach()
 }

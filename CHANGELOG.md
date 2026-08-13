@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Added named authentication profiles through `authentication.profiles` and `AuthenticationProfileProviderInterface`. Each profile binds one token transport, storage, manager, and required/optional authentication middleware.
+- Added per-profile built-in `transport_options`, with profile values taking precedence over global bearer or cookie options, and named application-provided transport mappings through `authentication.transports`.
+
+### Fixed
+- Corrected the documentation of the built-in cookie transport `secure` default to `false`.
+
+### Migration
+- Existing `default_storage`, `transport.driver`, and `transport.storage` configuration remains supported without deprecation. To opt into profiles, add `authentication.profiles`, choose `authentication.default_profile` explicitly when unqualified services should use one, and use `AuthenticationProfileProviderInterface` to register routes for non-default profiles.
+
 ## [2.0.0] - 2026-08-13
 
 ### Changed
@@ -14,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `authentication.transport.storage` is validated by `TokenStorageProviderFactory`; an unknown storage now raises `InvalidConfigValueException` during service creation.
 - Invalid and expired session token records are discarded.
 - Unified the built-in cookie transport default name as `sirix_authentication`.
-- Unified the built-in cookie transport `secure` default as `true`;
+- Unified the built-in cookie transport `secure` default as `false`;
 - Updated the supported `sirix/container-resolver` constraint to `^0.2 || ^1.0`.
 
 ### Added
