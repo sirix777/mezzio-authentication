@@ -181,7 +181,17 @@ $response = $api->manager()->login($request, $response, [
 $response = $api->manager()->logout($request, $response);
 ```
 
-`#[Authenticated]` and `#[GuestOnly]` continue to select only the default profile. Use manual route registration for a named profile in this first version.
+`#[Authenticated]` and `#[GuestOnly]` accept an optional `profile` named argument to select a named profile. Omitting `profile` keeps the existing behavior of selecting the default profile.
+
+```php
+use Sirix\Mezzio\Authentication\Attribute\Authenticated;
+use Sirix\Mezzio\Authentication\Attribute\GuestOnly;
+
+#[Authenticated(profile: 'api')]
+#[GuestOnly(profile: 'web')]
+```
+
+Profile-aware attributes are resolved through `MiddlewareSpecification` and the `ProfileMiddlewareFactory` registered in `ConfigProvider`. The routing-attributes pipeline builds the middleware lazily from the selected profile at request time. See `sirix/mezzio-routing-contracts` for the specification API.
 
 ## Core Concepts
 

@@ -22,6 +22,7 @@ use Sirix\Mezzio\Authentication\Factory\AuthenticationProfileProviderFactory;
 use Sirix\Mezzio\Authentication\Factory\AuthenticatorFactory;
 use Sirix\Mezzio\Authentication\Factory\AuthManagerFactory;
 use Sirix\Mezzio\Authentication\Factory\OptionalAuthenticateMiddlewareFactory;
+use Sirix\Mezzio\Authentication\Factory\ProfileMiddlewareFactory;
 use Sirix\Mezzio\Authentication\Factory\SecurityActorProviderFactory;
 use Sirix\Mezzio\Authentication\Factory\SessionTokenStorageFactory;
 use Sirix\Mezzio\Authentication\Factory\TokenStorageProviderFactory;
@@ -65,12 +66,13 @@ final readonly class ConfigProvider
                 OptionalAuthenticateMiddleware::class         => OptionalAuthenticateMiddlewareFactory::class,
             ],
             'invokables' => [
-                AuthenticationContext::class => AuthenticationContext::class,
-                NullActorProvider::class     => NullActorProvider::class,
-                GuestActor::class            => GuestActor::class,
-                NullTokenStorage::class      => NullTokenStorage::class,
-                BearerTokenTransport::class  => BearerTokenTransport::class,
-                GuestOnlyMiddleware::class   => GuestOnlyMiddleware::class,
+                AuthenticationContext::class    => AuthenticationContext::class,
+                NullActorProvider::class        => NullActorProvider::class,
+                GuestActor::class               => GuestActor::class,
+                NullTokenStorage::class         => NullTokenStorage::class,
+                BearerTokenTransport::class     => BearerTokenTransport::class,
+                GuestOnlyMiddleware::class      => GuestOnlyMiddleware::class,
+                ProfileMiddlewareFactory::class => ProfileMiddlewareFactory::class,
             ],
             'aliases'    => [
                 AuthContextInterface::class => AuthenticationContext::class,

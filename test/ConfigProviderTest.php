@@ -19,6 +19,7 @@ use Sirix\Mezzio\Authentication\Contract\SecurityActorProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
 use Sirix\Mezzio\Authentication\Factory\AuthenticationProfileProviderFactory;
+use Sirix\Mezzio\Authentication\Factory\ProfileMiddlewareFactory;
 use Sirix\Mezzio\Authentication\Middleware\AuthenticateMiddleware;
 use Sirix\Mezzio\Authentication\Middleware\GuestOnlyMiddleware;
 use Sirix\Mezzio\Authentication\Middleware\OptionalAuthenticateMiddleware;
@@ -121,6 +122,7 @@ final class ConfigProviderTest extends TestCase
         self::assertArrayHasKey(NullTokenStorage::class, $dependencies['invokables']);
         self::assertArrayHasKey(BearerTokenTransport::class, $dependencies['invokables']);
         self::assertArrayHasKey(GuestOnlyMiddleware::class, $dependencies['invokables']);
+        self::assertArrayHasKey(ProfileMiddlewareFactory::class, $dependencies['invokables']);
     }
 
     #[Test]

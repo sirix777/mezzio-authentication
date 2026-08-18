@@ -5,11 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.1.0] - 2026-08-18
 
 ### Added
+- `#[Authenticated]` and `#[GuestOnly]` accept an optional `profile` argument to select a named authentication profile.
+- `ProfileMiddlewareFactory` resolves spec-based profile middleware via the routing-attributes pipeline.
 - Added named authentication profiles through `authentication.profiles` and `AuthenticationProfileProviderInterface`. Each profile binds one token transport, storage, manager, and required/optional authentication middleware.
 - Added per-profile built-in `transport_options`, with profile values taking precedence over global bearer or cookie options, and named application-provided transport mappings through `authentication.transports`.
+
+### Changed
+- Default-profile attribute behavior unchanged; profile selection is opt-in.
+- Bumped `sirix/mezzio-routing-contracts` to `^1.1` and `sirix/mezzio-routing-attributes` to `^1.3`.
 
 ### Fixed
 - Corrected the documentation of the built-in cookie transport `secure` default to `false`.
