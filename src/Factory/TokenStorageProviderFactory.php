@@ -11,6 +11,7 @@ use Sirix\ContainerResolver\ConfigReader;
 use Sirix\ContainerResolver\ContainerResolver;
 use Sirix\ContainerResolver\Exception\InvalidConfigValueException;
 use Sirix\ContainerResolver\Exception\MissingContainerServiceException;
+use Sirix\Mezzio\Authentication\Config\AuthenticationProfileConfiguration;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
 use Sirix\Mezzio\Authentication\Storage\NullTokenStorage;
@@ -20,6 +21,7 @@ use Sirix\Mezzio\Authentication\TokenStorageProvider;
 use function array_keys;
 use function interface_exists;
 use function is_string;
+use function trim;
 
 final class TokenStorageProviderFactory
 {
@@ -41,7 +43,16 @@ final class TokenStorageProviderFactory
         }
 
         foreach ($configReader->map('authentication.storages', []) as $name => $serviceId) {
-            if (! is_string($serviceId) || '' === $serviceId) {
+            if ('' === trim($name)) {
+                throw InvalidConfigValueException::forType(
+                    "authentication.storages.{$name}",
+                    'non-empty-string storage name',
+                    $name,
+                    self::class,
+                );
+            }
+
+            if (! is_string($serviceId) || '' === trim($serviceId)) {
                 throw InvalidConfigValueException::forType(
                     "authentication.storages.{$name}",
                     'non-empty-string',
@@ -50,32 +61,52 @@ final class TokenStorageProviderFactory
                 );
             }
 
-            $storages[$name] = $containerResolver->getAs($serviceId, TokenStorageInterface::class);
+            $storages[$name] = $containerResolver->getAs(trim($serviceId), TokenStorageInterface::class);
         }
 
-        if (! isset($storages[$defaultStorage])) {
-            if ('session' === $defaultStorage && interface_exists(SessionInterface::class)) {
-                throw MissingContainerServiceException::forService(SessionTokenStorage::class, self::class);
-            }
-
-            throw InvalidConfigValueException::forAllowedValues(
-                'authentication.default_storage',
-                array_keys($storages),
-                $defaultStorage,
-                self::class,
-            );
-        }
+        $this->assertStorageIsRegistered($defaultStorage, 'authentication.default_storage', $storages);
 
         $transportStorage = $configReader->nonEmptyString('authentication.transport.storage', $defaultStorage);
-        if (! isset($storages[$transportStorage])) {
-            throw InvalidConfigValueException::forAllowedValues(
-                'authentication.transport.storage',
-                array_keys($storages),
-                $transportStorage,
-                self::class,
-            );
+        $this->assertStorageIsRegistered($transportStorage, 'authentication.transport.storage', $storages);
+
+        foreach ((new AuthenticationProfileConfiguration($configReader))->profiles() as $authenticationProfileDefinition) {
+            $this->assertStorageIsRegistered($authenticationProfileDefinition->storage(), $authenticationProfileDefinition->path() . '.storage', $storages);
         }
 
         return new TokenStorageProvider($defaultStorage, $storages);
+    }
+
+    /**
+     * @param array<string, TokenStorageInterface> $storages
+     */
+    private function assertStorageIsRegistered(string $name, string $path, array $storages): void
+    {
+        if (isset($storages[$name])) {
+            return;
+        }
+
+        if ('session' === $name && interface_exists(SessionInterface::class)) {
+            throw MissingContainerServiceException::forService(SessionTokenStorage::class, $path);
+        }
+
+        throw InvalidConfigValueException::forAllowedValues(
+            $path,
+            $this->storageNames($storages),
+            $name,
+            self::class,
+        );
+    }
+
+    /**
+     * @param array<string, TokenStorageInterface> $storages
+     *
+     * @return non-empty-list<string>
+     */
+    private function storageNames(array $storages): array
+    {
+        return array_keys([
+            'null' => true,
+            ...$storages,
+        ]);
     }
 }

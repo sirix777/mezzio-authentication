@@ -12,11 +12,14 @@ use Sirix\Mezzio\Authentication\ConfigProvider;
 use Sirix\Mezzio\Authentication\Contract\ActorInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthActorProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthContextInterface;
+use Sirix\Mezzio\Authentication\Contract\AuthenticationProfileProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthenticatorInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthManagerInterface;
 use Sirix\Mezzio\Authentication\Contract\SecurityActorProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
+use Sirix\Mezzio\Authentication\Factory\AuthenticationProfileProviderFactory;
+use Sirix\Mezzio\Authentication\Factory\ProfileMiddlewareFactory;
 use Sirix\Mezzio\Authentication\Middleware\AuthenticateMiddleware;
 use Sirix\Mezzio\Authentication\Middleware\GuestOnlyMiddleware;
 use Sirix\Mezzio\Authentication\Middleware\OptionalAuthenticateMiddleware;
@@ -45,6 +48,17 @@ final class ConfigProviderTest extends TestCase
         $dependencies   = $configProvider->getDependencies();
 
         self::assertArrayHasKey(AuthManagerInterface::class, $dependencies['factories']);
+    }
+
+    #[Test]
+    public function registersAuthenticationProfileProviderFactory(): void
+    {
+        $dependencies = (new ConfigProvider())->getDependencies();
+
+        self::assertSame(
+            AuthenticationProfileProviderFactory::class,
+            $dependencies['factories'][AuthenticationProfileProviderInterface::class],
+        );
     }
 
     #[Test]
@@ -108,6 +122,7 @@ final class ConfigProviderTest extends TestCase
         self::assertArrayHasKey(NullTokenStorage::class, $dependencies['invokables']);
         self::assertArrayHasKey(BearerTokenTransport::class, $dependencies['invokables']);
         self::assertArrayHasKey(GuestOnlyMiddleware::class, $dependencies['invokables']);
+        self::assertArrayHasKey(ProfileMiddlewareFactory::class, $dependencies['invokables']);
     }
 
     #[Test]

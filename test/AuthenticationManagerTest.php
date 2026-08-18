@@ -19,12 +19,16 @@ use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
+use Sirix\Mezzio\Authentication\Exception\TokenStorageMismatchException;
 use Sirix\Mezzio\Authentication\Middleware\AuthenticateMiddleware;
 use Sirix\Mezzio\Authentication\Storage\SessionTokenStorage;
+use Sirix\Mezzio\Authentication\Token\AuthToken;
 use Sirix\Mezzio\Authentication\TokenAuthenticator;
 use Sirix\Mezzio\Authentication\TokenStorageProvider;
 use Sirix\Mezzio\Authentication\Transport\BearerTokenTransport;
+use Sirix\Mezzio\Authentication\Transport\CookieTokenTransport;
 use SirixTest\Mezzio\Authentication\Support\InMemorySession;
+use SirixTest\Mezzio\Authentication\Support\InMemoryTokenStorage;
 use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
 final class AuthenticationManagerTest extends TestCase
@@ -123,6 +127,37 @@ final class AuthenticationManagerTest extends TestCase
     }
 
     #[Test]
+    public function logoutFailsBeforeDeletingOrDetachingWhenTheContextTokenUsesAnotherStorage(): void
+    {
+        $token = $this->createStub(TokenInterface::class);
+        $token->method('getStorage')->willReturn('api');
+
+        $storage = $this->createMock(TokenStorageInterface::class);
+        $storage->expects($this->never())->method('delete');
+
+        $storageProvider = $this->createMock(TokenStorageProviderInterface::class);
+        $storageProvider->expects($this->never())->method('getStorage');
+
+        $transport = $this->createMock(TokenTransportInterface::class);
+        $transport->expects($this->never())->method('detach');
+
+        $authenticationManager = new AuthenticationManager($storageProvider, $transport, 'web');
+        $serverRequest         = $this->psr7Factory
+            ->createServerRequest('POST', '/logout')
+            ->withAttribute(
+                AuthenticationAttributes::Context->value,
+                new AuthenticationContext($token, $this->createStub(ActorInterface::class)),
+            )
+        ;
+
+        $this->expectException(TokenStorageMismatchException::class);
+        $this->expectExceptionMessage('storage "api"');
+        $this->expectExceptionMessage('storage "web"');
+
+        $authenticationManager->logout($serverRequest, $this->psr7Factory->createResponse(204));
+    }
+
+    #[Test]
     public function completesSessionLoginAuthenticationAndLogoutLifecycle(): void
     {
         $inMemorySession = new InMemorySession();
@@ -187,5 +222,50 @@ final class AuthenticationManagerTest extends TestCase
 
         self::assertSame('', $logoutResponse->getHeaderLine('Authorization'));
         self::assertNull($sessionTokenStorage->load($tokenId, $request));
+    }
+
+    #[Test]
+    public function profileManagersCreateAndDeleteTokensOnlyInTheirConfiguredStorages(): void
+    {
+        $webStorage             = new InMemoryTokenStorage('web');
+        $apiStorage             = new InMemoryTokenStorage('api');
+        $tokenStorageProvider   = new TokenStorageProvider('web', [
+            'web' => $webStorage,
+            'api' => $apiStorage,
+        ]);
+        $webManager       = new AuthenticationManager($tokenStorageProvider, new CookieTokenTransport('web_auth'), 'web');
+        $apiManager       = new AuthenticationManager($tokenStorageProvider, new BearerTokenTransport(), 'api');
+        $serverRequest    = $this->psr7Factory->createServerRequest('POST', '/login');
+
+        $webResponse = $webManager->login($serverRequest, $this->psr7Factory->createResponse(), []);
+        $apiResponse = $apiManager->login($serverRequest, $this->psr7Factory->createResponse(), []);
+
+        $webToken = (new CookieTokenTransport('web_auth'))->fetch($serverRequest->withCookieParams([
+            'web_auth' => 'web-1',
+        ]));
+        $apiToken = (new BearerTokenTransport())->fetch($serverRequest->withHeader(
+            'Authorization',
+            $apiResponse->getHeaderLine('Authorization'),
+        ));
+
+        self::assertSame('web-1', $webToken);
+        self::assertSame('api-1', $apiToken);
+        self::assertSame(['create'], $webStorage->operations);
+        self::assertSame(['create'], $apiStorage->operations);
+
+        $webRequest = $serverRequest->withAttribute(
+            AuthenticationAttributes::Context->value,
+            new AuthenticationContext(new AuthToken('web-1', 'web', []), $this->createStub(ActorInterface::class)),
+        );
+        $apiRequest = $serverRequest->withAttribute(
+            AuthenticationAttributes::Context->value,
+            new AuthenticationContext(new AuthToken('api-1', 'api', []), $this->createStub(ActorInterface::class)),
+        );
+
+        $webManager->logout($webRequest, $webResponse);
+        $apiManager->logout($apiRequest, $apiResponse);
+
+        self::assertSame(['create', 'delete'], $webStorage->operations);
+        self::assertSame(['create', 'delete'], $apiStorage->operations);
     }
 }

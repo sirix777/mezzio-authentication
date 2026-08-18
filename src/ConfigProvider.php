@@ -9,6 +9,7 @@ use Sirix\Mezzio\Authentication\Actor\NullActorProvider;
 use Sirix\Mezzio\Authentication\Contract\ActorInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthActorProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthContextInterface;
+use Sirix\Mezzio\Authentication\Contract\AuthenticationProfileProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthenticatorInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthManagerInterface;
 use Sirix\Mezzio\Authentication\Contract\SecurityActorProviderInterface;
@@ -17,9 +18,11 @@ use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
 use Sirix\Mezzio\Authentication\Factory\ActorFactory;
 use Sirix\Mezzio\Authentication\Factory\ActorProviderFactory;
 use Sirix\Mezzio\Authentication\Factory\AuthenticateMiddlewareFactory;
+use Sirix\Mezzio\Authentication\Factory\AuthenticationProfileProviderFactory;
 use Sirix\Mezzio\Authentication\Factory\AuthenticatorFactory;
 use Sirix\Mezzio\Authentication\Factory\AuthManagerFactory;
 use Sirix\Mezzio\Authentication\Factory\OptionalAuthenticateMiddlewareFactory;
+use Sirix\Mezzio\Authentication\Factory\ProfileMiddlewareFactory;
 use Sirix\Mezzio\Authentication\Factory\SecurityActorProviderFactory;
 use Sirix\Mezzio\Authentication\Factory\SessionTokenStorageFactory;
 use Sirix\Mezzio\Authentication\Factory\TokenStorageProviderFactory;
@@ -50,24 +53,26 @@ final readonly class ConfigProvider
     {
         return [
             'factories'  => [
-                AuthManagerInterface::class           => AuthManagerFactory::class,
-                AuthenticatorInterface::class         => AuthenticatorFactory::class,
-                AuthActorProviderInterface::class     => ActorProviderFactory::class,
-                SecurityActorProviderInterface::class => SecurityActorProviderFactory::class,
-                ActorInterface::class                 => ActorFactory::class,
-                TokenStorageProviderInterface::class  => TokenStorageProviderFactory::class,
-                SessionTokenStorage::class            => SessionTokenStorageFactory::class,
-                TokenTransportInterface::class        => TokenTransportFactory::class,
-                AuthenticateMiddleware::class         => AuthenticateMiddlewareFactory::class,
-                OptionalAuthenticateMiddleware::class => OptionalAuthenticateMiddlewareFactory::class,
+                AuthManagerInterface::class                   => AuthManagerFactory::class,
+                AuthenticationProfileProviderInterface::class => AuthenticationProfileProviderFactory::class,
+                AuthenticatorInterface::class                 => AuthenticatorFactory::class,
+                AuthActorProviderInterface::class             => ActorProviderFactory::class,
+                SecurityActorProviderInterface::class         => SecurityActorProviderFactory::class,
+                ActorInterface::class                         => ActorFactory::class,
+                TokenStorageProviderInterface::class          => TokenStorageProviderFactory::class,
+                SessionTokenStorage::class                    => SessionTokenStorageFactory::class,
+                TokenTransportInterface::class                => TokenTransportFactory::class,
+                AuthenticateMiddleware::class                 => AuthenticateMiddlewareFactory::class,
+                OptionalAuthenticateMiddleware::class         => OptionalAuthenticateMiddlewareFactory::class,
             ],
             'invokables' => [
-                AuthenticationContext::class => AuthenticationContext::class,
-                NullActorProvider::class     => NullActorProvider::class,
-                GuestActor::class            => GuestActor::class,
-                NullTokenStorage::class      => NullTokenStorage::class,
-                BearerTokenTransport::class  => BearerTokenTransport::class,
-                GuestOnlyMiddleware::class   => GuestOnlyMiddleware::class,
+                AuthenticationContext::class    => AuthenticationContext::class,
+                NullActorProvider::class        => NullActorProvider::class,
+                GuestActor::class               => GuestActor::class,
+                NullTokenStorage::class         => NullTokenStorage::class,
+                BearerTokenTransport::class     => BearerTokenTransport::class,
+                GuestOnlyMiddleware::class      => GuestOnlyMiddleware::class,
+                ProfileMiddlewareFactory::class => ProfileMiddlewareFactory::class,
             ],
             'aliases'    => [
                 AuthContextInterface::class => AuthenticationContext::class,

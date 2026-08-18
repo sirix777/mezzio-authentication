@@ -9,7 +9,9 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Sirix\Mezzio\Authentication\Attribute\Authenticated;
+use Sirix\Mezzio\Authentication\Factory\ProfileMiddlewareFactory;
 use Sirix\Mezzio\Authentication\Middleware\AuthenticateMiddleware;
+use Sirix\Mezzio\Routing\Contracts\MiddlewareSpecification;
 use Sirix\Mezzio\Routing\Contracts\RouteAttributeModifierInterface;
 
 final class AuthenticatedTest extends TestCase
@@ -29,9 +31,31 @@ final class AuthenticatedTest extends TestCase
     }
 
     #[Test]
+    public function returnsMiddlewareSpecificationForNamedProfile(): void
+    {
+        $authenticated = new Authenticated(profile: 'api');
+        $middleware    = $authenticated->getMiddleware();
+
+        self::assertCount(1, $middleware);
+        self::assertInstanceOf(MiddlewareSpecification::class, $middleware[0]);
+        self::assertSame(AuthenticateMiddleware::class, $middleware[0]->service);
+        self::assertSame(ProfileMiddlewareFactory::class, $middleware[0]->factory);
+        self::assertSame([
+            'profile' => 'api',
+        ], $middleware[0]->arguments);
+    }
+
+    #[Test]
     public function returnsEmptyDefaults(): void
     {
         $authenticated = new Authenticated();
+        self::assertSame([], $authenticated->getDefaults());
+    }
+
+    #[Test]
+    public function returnsEmptyDefaultsForNamedProfile(): void
+    {
+        $authenticated = new Authenticated(profile: 'api');
         self::assertSame([], $authenticated->getDefaults());
     }
 

@@ -12,10 +12,8 @@ use Sirix\ContainerResolver\Exception\MissingContainerServiceException;
 use Sirix\Mezzio\Authentication\Actor\GuestActor;
 use Sirix\Mezzio\Authentication\Contract\AuthActorProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthContextInterface;
-use Sirix\Mezzio\Authentication\Contract\AuthenticatorInterface;
+use Sirix\Mezzio\Authentication\Contract\AuthenticationProfileProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\SecurityActorProviderInterface;
-use Sirix\Mezzio\Authentication\Contract\TokenStorageProviderInterface;
-use Sirix\Mezzio\Authentication\Contract\TokenTransportInterface;
 use Sirix\Mezzio\Authentication\Factory\ActorFactory;
 use Sirix\Mezzio\Authentication\Factory\AuthenticateMiddlewareFactory;
 use Sirix\Mezzio\Authentication\Factory\AuthenticatorFactory;
@@ -63,19 +61,14 @@ final class StrictFactoryDependenciesTest extends TestCase
 
         yield 'auth manager factory' => [
             static fn (ArrayContainer $arrayContainer): mixed => (new AuthManagerFactory())($arrayContainer),
-            [
-                TokenStorageProviderInterface::class => TokenStorageProviderInterface::class,
-            ],
-            TokenTransportInterface::class,
+            [],
+            AuthenticationProfileProviderInterface::class,
         ];
 
         yield 'authenticate middleware factory' => [
             static fn (ArrayContainer $arrayContainer): mixed => (new AuthenticateMiddlewareFactory())($arrayContainer),
-            [
-                AuthenticatorInterface::class        => AuthenticatorInterface::class,
-                TokenStorageProviderInterface::class => TokenStorageProviderInterface::class,
-            ],
-            TokenTransportInterface::class,
+            [],
+            AuthenticationProfileProviderInterface::class,
         ];
 
         yield 'authenticator factory' => [
@@ -86,11 +79,8 @@ final class StrictFactoryDependenciesTest extends TestCase
 
         yield 'optional authenticate middleware factory' => [
             static fn (ArrayContainer $arrayContainer): mixed => (new OptionalAuthenticateMiddlewareFactory())($arrayContainer),
-            [
-                AuthenticatorInterface::class        => AuthenticatorInterface::class,
-                TokenStorageProviderInterface::class => TokenStorageProviderInterface::class,
-            ],
-            TokenTransportInterface::class,
+            [],
+            AuthenticationProfileProviderInterface::class,
         ];
 
         yield 'security actor provider factory' => [

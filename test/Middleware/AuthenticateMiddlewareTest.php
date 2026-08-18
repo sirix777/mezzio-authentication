@@ -16,6 +16,7 @@ use Sirix\Mezzio\Authentication\Contract\ActorInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthActorProviderInterface;
 use Sirix\Mezzio\Authentication\Contract\AuthContextInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenInterface;
+use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
 use Sirix\Mezzio\Authentication\Exception\AuthenticationException;
 use Sirix\Mezzio\Authentication\Exception\StorageException;
 use Sirix\Mezzio\Authentication\Middleware\AuthenticateMiddleware;
@@ -23,7 +24,9 @@ use Sirix\Mezzio\Authentication\Storage\SessionTokenStorage;
 use Sirix\Mezzio\Authentication\TokenAuthenticator;
 use Sirix\Mezzio\Authentication\TokenStorageProvider;
 use Sirix\Mezzio\Authentication\Transport\BearerTokenTransport;
+use Sirix\Mezzio\Authentication\Transport\CookieTokenTransport;
 use SirixTest\Mezzio\Authentication\Support\InMemorySession;
+use SirixTest\Mezzio\Authentication\Support\InMemoryTokenStorage;
 use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
 final class AuthenticateMiddlewareTest extends TestCase
@@ -196,6 +199,139 @@ final class AuthenticateMiddlewareTest extends TestCase
 
         $this->expectException(StorageException::class);
         $authenticateMiddleware->process($serverRequest, $this->createUnreachableHandler());
+    }
+
+    #[Test]
+    public function doesNotFallBackToAnotherStorageWhenTheSelectedStorageCannotBeRead(): void
+    {
+        $selectedStorage       = $this->createMock(TokenStorageInterface::class);
+        $inMemoryTokenStorage  = new InMemoryTokenStorage('alternate');
+        $alternateToken        = $inMemoryTokenStorage->create([]);
+
+        self::assertSame($alternateToken, $inMemoryTokenStorage->load($alternateToken->getId()));
+        $inMemoryTokenStorage->operations = [];
+
+        $selectedStorage
+            ->expects($this->once())
+            ->method('load')
+            ->with('selected-token', $this->isInstanceOf(ServerRequestInterface::class))
+            ->willThrowException(new StorageException('Selected storage is unavailable'))
+        ;
+
+        $authenticateMiddleware = new AuthenticateMiddleware(
+            new TokenAuthenticator($this->createStub(AuthActorProviderInterface::class)),
+            new TokenStorageProvider('alternate', [
+                'selected'  => $selectedStorage,
+                'alternate' => $inMemoryTokenStorage,
+            ]),
+            new BearerTokenTransport(),
+            'selected',
+        );
+
+        $this->expectException(StorageException::class);
+
+        try {
+            $authenticateMiddleware->process(
+                $this->psr7Factory->createServerRequest('GET', '/')->withHeader('Authorization', 'Bearer selected-token'),
+                $this->createUnreachableHandler(),
+            );
+        } finally {
+            self::assertSame([], $inMemoryTokenStorage->operations);
+        }
+    }
+
+    #[Test]
+    public function profileMiddlewareReadsOnlyItsOwnTransportAndStorageWhenBothCredentialsArePresent(): void
+    {
+        $webStorage             = new InMemoryTokenStorage('web');
+        $apiStorage             = new InMemoryTokenStorage('api');
+        $webToken               = $webStorage->create([]);
+        $apiToken               = $apiStorage->create([]);
+        $tokenStorageProvider   = new TokenStorageProvider('web', [
+            'web' => $webStorage,
+            'api' => $apiStorage,
+        ]);
+        $actorProvider = $this->createStub(AuthActorProviderInterface::class);
+        $actorProvider->method('getActor')->willReturn($this->createStub(ActorInterface::class));
+        $webMiddleware = new AuthenticateMiddleware(
+            new TokenAuthenticator($actorProvider),
+            $tokenStorageProvider,
+            new CookieTokenTransport('web_auth'),
+            'web',
+        );
+        $apiMiddleware = new AuthenticateMiddleware(
+            new TokenAuthenticator($actorProvider),
+            $tokenStorageProvider,
+            new BearerTokenTransport(),
+            'api',
+        );
+        $serverRequest = $this->psr7Factory
+            ->createServerRequest('GET', '/')
+            ->withCookieParams([
+                'web_auth' => $webToken->getId(),
+            ])
+            ->withHeader('Authorization', 'Bearer ' . $apiToken->getId())
+        ;
+
+        $webHandler = $this->capturingHandler();
+        $apiHandler = $this->capturingHandler();
+
+        $webMiddleware->process($serverRequest, $webHandler);
+        $apiMiddleware->process($serverRequest, $apiHandler);
+
+        self::assertSame($webToken, $webHandler->request?->getAttribute(AuthenticationAttributes::Token->value));
+        self::assertSame($apiToken, $apiHandler->request?->getAttribute(AuthenticationAttributes::Token->value));
+        self::assertSame(['create', 'load'], $webStorage->operations);
+        self::assertSame(['create', 'load'], $apiStorage->operations);
+    }
+
+    #[Test]
+    public function profileMiddlewareIgnoresCredentialsFromTheOtherTransportWithoutStorageFallback(): void
+    {
+        $webStorage             = new InMemoryTokenStorage('web');
+        $apiStorage             = new InMemoryTokenStorage('api');
+        $apiToken               = $apiStorage->create([]);
+        $tokenStorageProvider   = new TokenStorageProvider('web', [
+            'web' => $webStorage,
+            'api' => $apiStorage,
+        ]);
+        $authenticateMiddleware = new AuthenticateMiddleware(
+            new TokenAuthenticator($this->createStub(AuthActorProviderInterface::class)),
+            $tokenStorageProvider,
+            new CookieTokenTransport('web_auth'),
+            'web',
+        );
+
+        $this->expectException(AuthenticationException::class);
+
+        try {
+            $authenticateMiddleware->process(
+                $this->psr7Factory->createServerRequest('GET', '/')->withHeader('Authorization', 'Bearer ' . $apiToken->getId()),
+                $this->createUnreachableHandler(),
+            );
+        } finally {
+            self::assertSame([], $webStorage->operations);
+            self::assertSame(['create'], $apiStorage->operations);
+        }
+    }
+
+    /**
+     * @return object{request: ?ServerRequestInterface}&RequestHandlerInterface
+     */
+    private function capturingHandler(): RequestHandlerInterface
+    {
+        return new class($this->psr7Factory) implements RequestHandlerInterface {
+            public ?ServerRequestInterface $request = null;
+
+            public function __construct(private readonly Psr7Factory $psr7Factory) {}
+
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                $this->request = $request;
+
+                return $this->psr7Factory->createResponse(204);
+            }
+        };
     }
 
     private function createUnreachableHandler(): RequestHandlerInterface
