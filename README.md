@@ -132,7 +132,7 @@ $app->get('/api/me', [
 **With `sirix/mezzio-routing-attributes` (optional):**
 
 ```bash
-composer require "sirix/mezzio-routing-attributes:^1.0"
+composer require "sirix/mezzio-routing-attributes"
 ```
 
 ```php

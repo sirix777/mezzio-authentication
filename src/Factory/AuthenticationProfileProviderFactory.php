@@ -44,7 +44,6 @@ final class AuthenticationProfileProviderFactory
         $tokenStorageProvider               = $containerResolver->get(TokenStorageProviderInterface::class);
         $authenticator                      = $containerResolver->get(AuthenticatorInterface::class);
         $tokenTransportResolver             = new TokenTransportResolver($container, $configReader, $authenticationProfileConfiguration);
-        $legacyTokenTransport               = $containerResolver->get(TokenTransportInterface::class);
 
         $authenticationProfileConfiguration->customTransportServiceIds();
 
@@ -64,17 +63,19 @@ final class AuthenticationProfileProviderFactory
             );
         }
 
-        $authenticationProfile = $this->createLegacyProfile(
-            $configReader,
-            $legacyTokenTransport,
-            $authenticator,
-            $tokenStorageProvider,
-            $containerResolver,
-        );
-        $defaultName   = $authenticationProfileConfiguration->defaultProfileName();
+        $defaultName = $authenticationProfileConfiguration->defaultProfileName();
 
         if (null === $defaultName) {
-            return new AuthenticationProfileProvider($profiles, $authenticationProfile);
+            return new AuthenticationProfileProvider(
+                $profiles,
+                $this->createLegacyProfile(
+                    $configReader,
+                    $containerResolver->get(TokenTransportInterface::class),
+                    $authenticator,
+                    $tokenStorageProvider,
+                    $containerResolver,
+                ),
+            );
         }
 
         if (! array_key_exists($defaultName, $profiles)) {
