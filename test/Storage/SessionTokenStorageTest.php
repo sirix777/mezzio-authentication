@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace SirixTest\Mezzio\Authentication\Storage;
 
+use Mezzio\Session\LazySession;
+use Mezzio\Session\Session;
 use Mezzio\Session\SessionInterface;
+use Mezzio\Session\SessionPersistenceInterface;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
@@ -183,6 +187,78 @@ final class SessionTokenStorageTest extends TestCase
 
         self::assertNull($sessionTokenStorage->load($tokenId, $serverRequest));
         self::assertFalse($this->inMemorySession->has('_authentication.tokens.' . $tokenId));
+    }
+
+    #[Test]
+    public function createRegeneratesTheSessionAndKeepsTheTokenRecord(): void
+    {
+        [$serverRequest, $lazySession] = $this->lazySessionRequest();
+        $sessionTokenStorage           = new SessionTokenStorage();
+
+        $token = $sessionTokenStorage->create([
+            'user_id' => 1,
+        ], null, $serverRequest);
+
+        self::assertTrue($lazySession->isRegenerated());
+        self::assertSame([
+            'user_id' => 1,
+        ], $sessionTokenStorage->load($token->getId(), $serverRequest)?->getPayload());
+    }
+
+    #[Test]
+    public function deleteRemovesTheTokenRecordWithoutRegeneratingTheSession(): void
+    {
+        $sessionTokenStorage           = new SessionTokenStorage();
+        [$serverRequest]               = $this->lazySessionRequest();
+        $token                         = $sessionTokenStorage->create([], null, $serverRequest);
+        [$logoutRequest, $lazySession] = $this->lazySessionRequest($serverRequest->getAttribute(SessionInterface::class)->toArray());
+
+        $sessionTokenStorage->delete($token, $logoutRequest);
+
+        // Regenerating here would keep the record under the old id with non-locking ext persistence.
+        self::assertFalse($lazySession->isRegenerated());
+        self::assertNull($sessionTokenStorage->load($token->getId(), $logoutRequest));
+    }
+
+    #[Test]
+    public function createKeepsTheTokenRecordOnAPlainSession(): void
+    {
+        $serverRequest       = $this->psr7Factory->createServerRequest('POST', '/login')->withAttribute(SessionInterface::class, new Session([]));
+        $sessionTokenStorage = new SessionTokenStorage();
+
+        $token = $sessionTokenStorage->create([
+            'user_id' => 1,
+        ], null, $serverRequest);
+
+        self::assertNotNull($sessionTokenStorage->load($token->getId(), $serverRequest));
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     *
+     * @return array{ServerRequestInterface, LazySession}
+     */
+    private function lazySessionRequest(array $data = []): array
+    {
+        $serverRequest = $this->psr7Factory->createServerRequest('POST', '/');
+        $lazySession   = new LazySession(new readonly class($data) implements SessionPersistenceInterface {
+            /**
+             * @param array<string, mixed> $data
+             */
+            public function __construct(private array $data) {}
+
+            public function initializeSessionFromRequest(ServerRequestInterface $request): SessionInterface
+            {
+                return new Session($this->data);
+            }
+
+            public function persistSession(SessionInterface $session, ResponseInterface $response): ResponseInterface
+            {
+                return $response;
+            }
+        }, $serverRequest);
+
+        return [$serverRequest->withAttribute(SessionInterface::class, $lazySession), $lazySession];
     }
 
     private function requestWithSession(): ServerRequestInterface

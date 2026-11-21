@@ -596,6 +596,91 @@ final class TokenTransportResolverTest extends TestCase
         $profileConfiguration->profiles();
     }
 
+    #[Test]
+    #[DataProvider('sameSiteValues')]
+    public function normalisesSameSiteCaseInsensitively(string $sameSite, string $expected): void
+    {
+        [$profileConfiguration, $resolver] = $this->resolver([
+            'authentication' => [
+                'profiles' => [
+                    'web' => [
+                        'transport'         => 'cookie',
+                        'storage'           => 'session',
+                        'transport_options' => [
+                            'same_site' => $sameSite,
+                            'secure'    => false,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $cookie = $resolver->profileTransport($profileConfiguration->profiles()['web'])->attach(
+            (new Psr7Factory())->createResponse(),
+            new AuthToken('token', 'session', []),
+        )->getHeaderLine('Set-Cookie');
+
+        self::assertStringEndsWith('; SameSite=' . $expected, $cookie);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function sameSiteValues(): iterable
+    {
+        yield 'lower case' => ['lax', 'Lax'];
+
+        yield 'upper case with padding' => [' STRICT ', 'Strict'];
+
+        yield 'none without secure is allowed' => ['none', 'None'];
+    }
+
+    #[Test]
+    public function rejectsAnUnknownSameSiteValue(): void
+    {
+        [$profileConfiguration, $resolver] = $this->resolver([
+            'authentication' => [
+                'profiles' => [
+                    'web' => [
+                        'transport'         => 'cookie',
+                        'storage'           => 'session',
+                        'transport_options' => [
+                            'same_site' => 'Laxx',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->expectException(InvalidConfigValueException::class);
+        $this->expectExceptionMessageMatches('/"authentication\.profiles\.web\.transport_options\.same_site" .*must be one of "Lax", "Strict", "None"; /');
+
+        $resolver->profileTransport($profileConfiguration->profiles()['web']);
+    }
+
+    #[Test]
+    public function rejectsAnUnknownGlobalSameSiteWithTheGlobalPath(): void
+    {
+        [$profileConfiguration, $resolver] = $this->resolver([
+            'authentication' => [
+                'cookie'   => [
+                    'same_site' => 'Laxx',
+                ],
+                'profiles' => [
+                    'web' => [
+                        'transport' => 'cookie',
+                        'storage'   => 'session',
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->expectException(InvalidConfigValueException::class);
+        $this->expectExceptionMessage('"authentication.cookie.same_site"');
+
+        $resolver->profileTransport($profileConfiguration->profiles()['web']);
+    }
+
     /**
      * @param array<string, mixed> $configuration
      * @param array<string, mixed> $services

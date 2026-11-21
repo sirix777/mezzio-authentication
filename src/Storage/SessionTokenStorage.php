@@ -36,6 +36,8 @@ final readonly class SessionTokenStorage implements TokenStorageInterface
             'payload'    => $payload,
             'expires_at' => $expiresAt,
         ]);
+        // LazySession regenerates in place; a plain Session returns a clone the middleware would not persist.
+        $session->regenerate();
 
         return $authToken;
     }
@@ -78,6 +80,7 @@ final readonly class SessionTokenStorage implements TokenStorageInterface
 
     public function delete(TokenInterface $token, ?ServerRequestInterface $serverRequest = null): void
     {
+        // No regeneration: with non-locking ext persistence it would leave the record under the old session id.
         $this->session($serverRequest)->unset($this->key($token->getId()));
     }
 

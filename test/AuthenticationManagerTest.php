@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SirixTest\Mezzio\Authentication;
 
+use InvalidArgumentException;
 use Mezzio\Session\SessionInterface;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -297,5 +298,59 @@ final class AuthenticationManagerTest extends TestCase
 
         self::assertSame(['create', 'delete'], $defaultStorage->operations);
         self::assertSame([], $otherStorage->operations);
+    }
+
+    #[Test]
+    public function defaultManagerLogoutRevokesATokenFromAnotherRegisteredStorage(): void
+    {
+        $webStorage = new InMemoryTokenStorage('web');
+        $apiStorage = new InMemoryTokenStorage('api');
+        $manager    = new AuthenticationManager(
+            new TokenStorageProvider('web', [
+                'web' => $webStorage,
+                'api' => $apiStorage,
+            ]),
+            new BearerTokenTransport(),
+        );
+
+        $manager->logout(
+            $this->psr7Factory->createServerRequest('POST', '/logout')->withAttribute(
+                AuthenticationAttributes::Context->value,
+                new AuthenticationContext(new AuthToken('api-1', 'api', []), $this->createStub(ActorInterface::class)),
+            ),
+            $this->psr7Factory->createResponse(),
+        );
+
+        self::assertSame(['delete'], $apiStorage->operations);
+        self::assertSame([], $webStorage->operations);
+    }
+
+    #[Test]
+    public function defaultManagerLogoutFailsForATokenFromAnUnregisteredStorage(): void
+    {
+        $webStorage = new InMemoryTokenStorage('web');
+        $apiStorage = new InMemoryTokenStorage('api');
+        $manager    = new AuthenticationManager(
+            new TokenStorageProvider('web', [
+                'web' => $webStorage,
+                'api' => $apiStorage,
+            ]),
+            new BearerTokenTransport(),
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+
+        try {
+            $manager->logout(
+                $this->psr7Factory->createServerRequest('POST', '/logout')->withAttribute(
+                    AuthenticationAttributes::Context->value,
+                    new AuthenticationContext(new AuthToken('redis-1', 'redis', []), $this->createStub(ActorInterface::class)),
+                ),
+                $this->psr7Factory->createResponse(),
+            );
+        } finally {
+            self::assertSame([], $webStorage->operations);
+            self::assertSame([], $apiStorage->operations);
+        }
     }
 }

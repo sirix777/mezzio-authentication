@@ -42,7 +42,7 @@ final readonly class AuthenticationManager implements AuthManagerInterface
                 throw TokenStorageMismatchException::forStorage($this->storage, $token->getStorage());
             }
 
-            $this->storage()->delete($token, $serverRequest);
+            $this->tokenStorageProvider->getStorage($token->getStorage())->delete($token, $serverRequest);
         }
 
         return $this->tokenTransport->detach($response);

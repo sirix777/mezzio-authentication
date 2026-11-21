@@ -319,9 +319,11 @@ The authentication package does not depend on RBAC. The integration contract is 
 1. `Mezzio\Session\SessionInterface::class`
 2. `'session'`
 
-When using session storage, `Mezzio\Session\SessionMiddleware` must run before authentication middleware.
+When using session storage, `Mezzio\Session\SessionMiddleware` must run before authentication middleware. `SessionTokenStorage` regenerates the session ID on login. It does not regenerate on logout: with `mezzio-session-ext` in `non_locking` mode a regenerated session leaves the old session ID with its data, the token record included.
 
-Cookie transport options are intentionally passed through without package-level policy validation, so applications retain control over deployment-specific settings. The historical `authentication.cookie.secure` default is `false` for compatibility: set it to `true` for every HTTPS production deployment, enable HSTS, and use `false` only in an explicit local HTTP-development override. Keep `http_only: true`, choose a `same_site` policy appropriate for the application flow, and provide CSRF protection where cookies are sent automatically. `SameSite=None` requires `Secure` in browsers, so configure both together.
+Custom storages registered under `authentication.storages` must create and load tokens whose `getStorage()` returns the registered name; logout deletes a token from the storage it names.
+
+Cookie transport options are intentionally passed through without package-level policy validation, so applications retain control over deployment-specific settings. The one exception is `same_site`: it must be `Lax`, `Strict` or `None` (case-insensitive), and any other value fails container construction. The historical `authentication.cookie.secure` default is `false` for compatibility: set it to `true` for every HTTPS production deployment, enable HSTS, and use `false` only in an explicit local HTTP-development override. Keep `http_only: true`, choose a `same_site` policy appropriate for the application flow, and provide CSRF protection where cookies are sent automatically. `SameSite=None` requires `Secure` in browsers, so configure both together.
 
 When using the container integration, configure the cookie name with `authentication.cookie.name`. The built-in transport and factory both default to `sirix_authentication`.
 

@@ -17,6 +17,7 @@ use function array_keys;
 use function in_array;
 use function is_bool;
 use function is_string;
+use function strtolower;
 use function trim;
 
 /**
@@ -142,13 +143,26 @@ final readonly class TokenTransportResolver
                 $path,
                 $this->configReader->bool('authentication.cookie.http_only', true),
             ),
-            sameSite: $this->nonEmptyStringOption(
-                $options,
-                'same_site',
-                $path,
-                $this->configReader->nonEmptyString('authentication.cookie.same_site', 'Lax'),
+            sameSite: $this->sameSite(
+                $this->nonEmptyStringOption(
+                    $options,
+                    'same_site',
+                    $path,
+                    $this->configReader->nonEmptyString('authentication.cookie.same_site', 'Lax'),
+                ),
+                array_key_exists('same_site', $options) ? $path . '.same_site' : 'authentication.cookie.same_site',
             ),
         );
+    }
+
+    private function sameSite(string $value, string $path): string
+    {
+        return match (strtolower(trim($value))) {
+            'lax'    => 'Lax',
+            'strict' => 'Strict',
+            'none'   => 'None',
+            default  => throw InvalidConfigValueException::forAllowedValues($path, ['Lax', 'Strict', 'None'], $value, self::class),
+        };
     }
 
     /**
