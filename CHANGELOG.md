@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-11-21
+
+### Fixed
+- `AuthenticationManager::logout()` on a manager without a named storage (the
+  container's `AuthManagerInterface`) now deletes the token from the storage
+  that issued it. Before, it deleted from the default storage, so a token from
+  another storage stayed valid while the transport was still detached. A token
+  whose storage is not registered now fails loudly.
+- `SessionTokenStorage` regenerates the session ID on login (`create()`) and on
+  logout (`delete()`).
+
+### Changed
+- `same_site` (global `authentication.cookie.same_site` and per-profile
+  `transport_options.same_site`) must be `Lax`, `Strict` or `None`,
+  case-insensitive, and is emitted in that canonical form. Other values fail
+  container construction. `SameSite=None` without `Secure` is still accepted.
+
 ## [2.2.0] - 2026-11-21
 
 ### Added
