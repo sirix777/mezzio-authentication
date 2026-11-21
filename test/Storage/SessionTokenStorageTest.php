@@ -16,7 +16,6 @@ use Sirix\Mezzio\Authentication\Contract\TokenInterface;
 use Sirix\Mezzio\Authentication\Contract\TokenStorageInterface;
 use Sirix\Mezzio\Authentication\Exception\StorageException;
 use Sirix\Mezzio\Authentication\Storage\SessionTokenStorage;
-use Sirix\Mezzio\Authentication\Token\AuthToken;
 use SirixTest\Mezzio\Authentication\Support\InMemorySession;
 use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 
@@ -207,7 +206,7 @@ final class SessionTokenStorageTest extends TestCase
     }
 
     #[Test]
-    public function deleteRegeneratesTheSessionAndRemovesTheTokenRecord(): void
+    public function deleteRemovesTheTokenRecordWithoutRegeneratingTheSession(): void
     {
         $sessionTokenStorage           = new SessionTokenStorage();
         [$serverRequest]               = $this->lazySessionRequest();
@@ -216,18 +215,9 @@ final class SessionTokenStorageTest extends TestCase
 
         $sessionTokenStorage->delete($token, $logoutRequest);
 
-        self::assertTrue($lazySession->isRegenerated());
+        // Regenerating here would keep the record under the old id with non-locking ext persistence.
+        self::assertFalse($lazySession->isRegenerated());
         self::assertNull($sessionTokenStorage->load($token->getId(), $logoutRequest));
-    }
-
-    #[Test]
-    public function deleteRegeneratesEvenWhenTheRecordIsAbsent(): void
-    {
-        [$serverRequest, $lazySession] = $this->lazySessionRequest();
-
-        (new SessionTokenStorage())->delete(new AuthToken('missing', 'session', []), $serverRequest);
-
-        self::assertTrue($lazySession->isRegenerated());
     }
 
     #[Test]

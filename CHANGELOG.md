@@ -12,9 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   container's `AuthManagerInterface`) now deletes the token from the storage
   that issued it. Before, it deleted from the default storage, so a token from
   another storage stayed valid while the transport was still detached. A token
-  whose storage is not registered now fails loudly.
-- `SessionTokenStorage` regenerates the session ID on login (`create()`) and on
-  logout (`delete()`).
+  whose storage is not registered now fails loudly. Custom storages must issue
+  tokens whose `getStorage()` returns their name under `authentication.storages`.
+- `SessionTokenStorage` regenerates the session ID on login (`create()`). Logout
+  does not regenerate: with `mezzio-session-ext` in `non_locking` mode the old
+  session ID would keep the token record.
 
 ### Changed
 - `same_site` (global `authentication.cookie.same_site` and per-profile
