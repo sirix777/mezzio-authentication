@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SirixTest\Mezzio\Authentication\Transport;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Sirix\Mezzio\Authentication\Contract\TokenInterface;
@@ -104,5 +105,33 @@ final class BearerTokenTransportTest extends TestCase
         $result = $this->bearerTokenTransport->detach($response);
 
         self::assertFalse($result->hasHeader('Authorization'));
+    }
+
+    /**
+     * @param non-empty-string $header
+     */
+    #[Test]
+    #[DataProvider('authorizationHeaders')]
+    public function fetchParsesTheSchemeStrictly(string $header, ?string $expected): void
+    {
+        $serverRequest = $this->psr7Factory->createServerRequest('GET', '/')->withHeader('Authorization', $header);
+
+        self::assertSame($expected, $this->bearerTokenTransport->fetch($serverRequest));
+    }
+
+    /**
+     * @return iterable<string, array{non-empty-string, ?string}>
+     */
+    public static function authorizationHeaders(): iterable
+    {
+        yield 'scheme is case-insensitive' => ['bearer token-1', 'token-1'];
+
+        yield 'surrounding whitespace is trimmed' => ["  Bearer \t token-1  ", 'token-1'];
+
+        yield 'scheme glued to the token' => ['Bearertoken-1', null];
+
+        yield 'scheme only' => ['Bearer    ', null];
+
+        yield 'scheme as a prefix of another scheme' => ['BearerX token-1', null];
     }
 }

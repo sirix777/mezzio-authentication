@@ -48,8 +48,8 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
 
         $response = $optionalAuthenticateMiddleware->process(
             $this->psr7Factory->createServerRequest('GET', '/'),
-            new class($this->psr7Factory) implements RequestHandlerInterface {
-                public function __construct(private readonly Psr7Factory $psr7Factory) {}
+            new readonly class($this->psr7Factory) implements RequestHandlerInterface {
+                public function __construct(private Psr7Factory $psr7Factory) {}
 
                 public function handle(ServerRequestInterface $request): ResponseInterface
                 {
@@ -122,8 +122,8 @@ final class OptionalAuthenticateMiddlewareTest extends TestCase
             $this->psr7Factory
                 ->createServerRequest('GET', '/')
                 ->withHeader('Authorization', 'Bearer broken-token'),
-            new class($this->psr7Factory) implements RequestHandlerInterface {
-                public function __construct(private readonly Psr7Factory $psr7Factory) {}
+            new readonly class($this->psr7Factory) implements RequestHandlerInterface {
+                public function __construct(private Psr7Factory $psr7Factory) {}
 
                 public function handle(ServerRequestInterface $request): ResponseInterface
                 {

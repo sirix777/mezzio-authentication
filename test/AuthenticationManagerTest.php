@@ -84,7 +84,7 @@ final class AuthenticationManagerTest extends TestCase
     #[Test]
     public function logoutDeletesTokenAndDetachesTransport(): void
     {
-        $token = $this->createMock(TokenInterface::class);
+        $token = $this->createStub(TokenInterface::class);
         $token->method('getStorage')->willReturn('session');
 
         $storage = $this->createMock(TokenStorageInterface::class);
@@ -103,7 +103,7 @@ final class AuthenticationManagerTest extends TestCase
         ;
 
         $response = $this->psr7Factory->createResponse(204);
-        $detached = $this->createMock(ResponseInterface::class);
+        $detached = $this->createStub(ResponseInterface::class);
 
         $transport = $this->createMock(TokenTransportInterface::class);
         $transport
@@ -187,8 +187,8 @@ final class AuthenticationManagerTest extends TestCase
 
         $actor                  = $this->createStub(ActorInterface::class);
         $authenticateMiddleware = new AuthenticateMiddleware(
-            new TokenAuthenticator(new class($actor) implements AuthActorProviderInterface {
-                public function __construct(private readonly ActorInterface $actor) {}
+            new TokenAuthenticator(new readonly class($actor) implements AuthActorProviderInterface {
+                public function __construct(private ActorInterface $actor) {}
 
                 public function getActor(TokenInterface $token): ActorInterface
                 {
@@ -267,5 +267,35 @@ final class AuthenticationManagerTest extends TestCase
 
         self::assertSame(['create', 'delete'], $webStorage->operations);
         self::assertSame(['create', 'delete'], $apiStorage->operations);
+    }
+
+    #[Test]
+    public function managerWithoutNamedStorageUsesTheDefaultStorage(): void
+    {
+        $defaultStorage = new InMemoryTokenStorage('web');
+        $otherStorage   = new InMemoryTokenStorage('api');
+        $manager        = new AuthenticationManager(
+            new TokenStorageProvider('web', [
+                'web' => $defaultStorage,
+                'api' => $otherStorage,
+            ]),
+            new BearerTokenTransport(),
+        );
+        $serverRequest = $this->psr7Factory->createServerRequest('POST', '/login');
+
+        $response = $manager->login($serverRequest, $this->psr7Factory->createResponse(), []);
+
+        self::assertSame('Bearer web-1', $response->getHeaderLine('Authorization'));
+
+        $manager->logout(
+            $serverRequest->withAttribute(
+                AuthenticationAttributes::Context->value,
+                new AuthenticationContext(new AuthToken('web-1', 'web', []), $this->createStub(ActorInterface::class)),
+            ),
+            $response,
+        );
+
+        self::assertSame(['create', 'delete'], $defaultStorage->operations);
+        self::assertSame([], $otherStorage->operations);
     }
 }

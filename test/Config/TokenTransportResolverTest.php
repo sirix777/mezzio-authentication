@@ -20,6 +20,8 @@ use SirixTest\Mezzio\Authentication\Support\ArrayContainer;
 use SirixTest\Mezzio\Authentication\Support\Psr7Factory;
 use stdClass;
 
+use function preg_quote;
+
 final class TokenTransportResolverTest extends TestCase
 {
     /**
@@ -501,6 +503,97 @@ final class TokenTransportResolverTest extends TestCase
         $this->expectExceptionMessage('authentication.default_profile');
 
         $profileConfiguration->defaultProfileName();
+    }
+
+    /**
+     * @param array<string, mixed> $transportOptions
+     */
+    #[Test]
+    #[DataProvider('wronglyTypedCookieOptions')]
+    public function rejectsWronglyTypedCookieOptions(array $transportOptions, string $path, string $type): void
+    {
+        [$profileConfiguration, $resolver] = $this->resolver([
+            'authentication' => [
+                'profiles' => [
+                    'web' => [
+                        'transport'         => 'cookie',
+                        'storage'           => 'session',
+                        'transport_options' => $transportOptions,
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->expectException(InvalidConfigValueException::class);
+        $this->expectExceptionMessageMatches('/"' . preg_quote($path, '/') . '" required by .* must be ' . $type . ';/');
+
+        $resolver->profileTransport($profileConfiguration->profiles()['web']);
+    }
+
+    /**
+     * @return iterable<string, array{array<string, mixed>, string, string}>
+     */
+    public static function wronglyTypedCookieOptions(): iterable
+    {
+        yield 'secure as string' => [[
+            'secure' => 'yes',
+        ], 'authentication.profiles.web.transport_options.secure', 'bool'];
+
+        yield 'http_only as int' => [[
+            'http_only' => 1,
+        ], 'authentication.profiles.web.transport_options.http_only', 'bool'];
+
+        yield 'domain as int' => [[
+            'domain' => 42,
+        ], 'authentication.profiles.web.transport_options.domain', 'string'];
+    }
+
+    #[Test]
+    public function blankCookieDomainOmitsTheDomainAttribute(): void
+    {
+        [$profileConfiguration, $resolver] = $this->resolver([
+            'authentication' => [
+                'profiles' => [
+                    'web' => [
+                        'transport'         => 'cookie',
+                        'storage'           => 'session',
+                        'transport_options' => [
+                            'domain' => ' ',
+                            'secure' => true,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $cookie = $resolver->profileTransport($profileConfiguration->profiles()['web'])->attach(
+            (new Psr7Factory())->createResponse(),
+            new AuthToken('token', 'session', []),
+        )->getHeaderLine('Set-Cookie');
+
+        self::assertStringNotContainsStringIgnoringCase('domain=', $cookie);
+        self::assertStringContainsString('; Secure', $cookie);
+    }
+
+    #[Test]
+    public function rejectsTransportOptionsGivenAsAList(): void
+    {
+        [$profileConfiguration] = $this->resolver([
+            'authentication' => [
+                'profiles' => [
+                    'web' => [
+                        'transport'         => 'cookie',
+                        'storage'           => 'session',
+                        'transport_options' => ['web_auth'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->expectException(InvalidConfigValueException::class);
+        $this->expectExceptionMessageMatches('/"authentication\.profiles\.web\.transport_options" required by .* must be array with string keys;/');
+
+        $profileConfiguration->profiles();
     }
 
     /**
