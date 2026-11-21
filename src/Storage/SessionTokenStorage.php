@@ -36,6 +36,7 @@ final readonly class SessionTokenStorage implements TokenStorageInterface
             'payload'    => $payload,
             'expires_at' => $expiresAt,
         ]);
+        $this->regenerate($session);
 
         return $authToken;
     }
@@ -78,7 +79,9 @@ final readonly class SessionTokenStorage implements TokenStorageInterface
 
     public function delete(TokenInterface $token, ?ServerRequestInterface $serverRequest = null): void
     {
-        $this->session($serverRequest)->unset($this->key($token->getId()));
+        $session = $this->session($serverRequest);
+        $session->unset($this->key($token->getId()));
+        $this->regenerate($session);
     }
 
     private function session(?ServerRequestInterface $serverRequest): SessionInterface
@@ -93,6 +96,12 @@ final readonly class SessionTokenStorage implements TokenStorageInterface
         }
 
         return $session;
+    }
+
+    private function regenerate(SessionInterface $session): void
+    {
+        // LazySession regenerates in place; a plain Session returns a clone the middleware would not persist.
+        $session->regenerate();
     }
 
     private function key(string $id): string
