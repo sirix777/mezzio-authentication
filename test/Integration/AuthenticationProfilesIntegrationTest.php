@@ -146,8 +146,8 @@ final class AuthenticationProfilesIntegrationTest extends TestCase
         InMemoryTokenStorage $inMemoryTokenStorage
     ): AuthenticationProfileProviderInterface {
         $actor         = $this->createStub(ActorInterface::class);
-        $authenticator = new class($actor) implements AuthenticatorInterface {
-            public function __construct(private readonly ActorInterface $actor) {}
+        $authenticator = new readonly class($actor) implements AuthenticatorInterface {
+            public function __construct(private ActorInterface $actor) {}
 
             public function authenticate(?TokenInterface $token): AuthenticationContext
             {

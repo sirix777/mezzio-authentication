@@ -104,4 +104,29 @@ final class CookieTokenTransportTest extends TestCase
         self::assertStringContainsString('sirix_authentication=deleted', $cookieHeader);
         self::assertStringContainsString('Expires=', $cookieHeader);
     }
+
+    #[Test]
+    public function attachHonoursConfiguredCookieAttributes(): void
+    {
+        $cookieTokenTransport = new CookieTokenTransport('auth', '/app', 'example.com', true, false, 'Strict');
+        $token                = $this->createStub(TokenInterface::class);
+        $token->method('getId')->willReturn('a b/c');
+        $token->method('getExpiresAt')->willReturn(0);
+
+        self::assertSame(
+            'auth=a%20b%2Fc; Path=/app; Domain=example.com; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=Strict',
+            $cookieTokenTransport->attach($this->psr7Factory->createResponse(), $token)->getHeaderLine('Set-Cookie'),
+        );
+    }
+
+    #[Test]
+    public function detachRepeatsPathDomainAndSecureSoTheBrowserDeletesTheSameCookie(): void
+    {
+        $cookieTokenTransport = new CookieTokenTransport('auth', '/app', 'example.com', true, true, 'None');
+
+        self::assertSame(
+            'auth=deleted; Path=/app; Domain=example.com; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Secure; HttpOnly; SameSite=None',
+            $cookieTokenTransport->detach($this->psr7Factory->createResponse())->getHeaderLine('Set-Cookie'),
+        );
+    }
 }

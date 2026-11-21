@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SirixTest\Mezzio\Authentication\Factory;
 
 use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
@@ -208,5 +209,43 @@ final class TokenStorageProviderFactoryTest extends TestCase
         $this->expectExceptionMessage('authentication.profiles.web.storage');
 
         $tokenStorageProviderFactory($arrayContainer);
+    }
+
+    /**
+     * @param array<array-key, mixed> $storages
+     */
+    #[Test]
+    #[DataProvider('invalidStorageMappings')]
+    public function rejectsInvalidStorageMappings(array $storages, string $path): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+        $this->expectExceptionMessage($path);
+
+        (new TokenStorageProviderFactory())(new ArrayContainer([
+            'config'                => [
+                'authentication' => [
+                    'storages' => $storages,
+                ],
+            ],
+            NullTokenStorage::class => new NullTokenStorage(),
+        ]));
+    }
+
+    /**
+     * @return iterable<string, array{array<array-key, mixed>, string}>
+     */
+    public static function invalidStorageMappings(): iterable
+    {
+        yield 'blank storage name' => [[
+            ' ' => 'app.storage',
+        ], 'authentication.storages. '];
+
+        yield 'non-string service id' => [[
+            'redis' => 42,
+        ], 'authentication.storages.redis'];
+
+        yield 'blank service id' => [[
+            'redis' => ' ',
+        ], 'authentication.storages.redis'];
     }
 }

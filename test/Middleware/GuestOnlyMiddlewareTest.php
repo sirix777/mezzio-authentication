@@ -39,8 +39,8 @@ final class GuestOnlyMiddlewareTest extends TestCase
 
         $response = $guestOnlyMiddleware->process(
             $serverRequest,
-            new class($this->psr7Factory) implements RequestHandlerInterface {
-                public function __construct(private readonly Psr7Factory $psr7Factory) {}
+            new readonly class($this->psr7Factory) implements RequestHandlerInterface {
+                public function __construct(private Psr7Factory $psr7Factory) {}
 
                 public function handle(ServerRequestInterface $request): ResponseInterface
                 {
@@ -69,8 +69,8 @@ final class GuestOnlyMiddlewareTest extends TestCase
         $this->expectException(AlreadyAuthenticatedException::class);
         $guestOnlyMiddleware->process(
             $serverRequest,
-            new class($this->psr7Factory) implements RequestHandlerInterface {
-                public function __construct(private readonly Psr7Factory $psr7Factory) {}
+            new readonly class($this->psr7Factory) implements RequestHandlerInterface {
+                public function __construct(private Psr7Factory $psr7Factory) {}
 
                 public function handle(ServerRequestInterface $request): ResponseInterface
                 {
@@ -87,8 +87,8 @@ final class GuestOnlyMiddlewareTest extends TestCase
 
         $response = $guestOnlyMiddleware->process(
             $this->psr7Factory->createServerRequest('GET', '/'),
-            new class($this->psr7Factory) implements RequestHandlerInterface {
-                public function __construct(private readonly Psr7Factory $psr7Factory) {}
+            new readonly class($this->psr7Factory) implements RequestHandlerInterface {
+                public function __construct(private Psr7Factory $psr7Factory) {}
 
                 public function handle(ServerRequestInterface $request): ResponseInterface
                 {

@@ -95,8 +95,8 @@ final class AuthenticateMiddlewareTest extends TestCase
 
         $response = $authenticateMiddleware->process(
             $request,
-            new class($this->psr7Factory) implements RequestHandlerInterface {
-                public function __construct(private readonly Psr7Factory $psr7Factory) {}
+            new readonly class($this->psr7Factory) implements RequestHandlerInterface {
+                public function __construct(private Psr7Factory $psr7Factory) {}
 
                 public function handle(ServerRequestInterface $request): ResponseInterface
                 {
@@ -312,6 +312,31 @@ final class AuthenticateMiddlewareTest extends TestCase
         } finally {
             self::assertSame([], $webStorage->operations);
             self::assertSame(['create'], $apiStorage->operations);
+        }
+    }
+
+    #[Test]
+    public function rejectsAWellFormedTokenThatTheStorageDoesNotKnow(): void
+    {
+        $apiStorage             = new InMemoryTokenStorage('api');
+        $authenticateMiddleware = new AuthenticateMiddleware(
+            new TokenAuthenticator($this->createStub(AuthActorProviderInterface::class)),
+            new TokenStorageProvider('api', [
+                'api' => $apiStorage,
+            ]),
+            new BearerTokenTransport(),
+            'api',
+        );
+
+        $this->expectException(AuthenticationException::class);
+
+        try {
+            $authenticateMiddleware->process(
+                $this->psr7Factory->createServerRequest('GET', '/')->withHeader('Authorization', 'Bearer api-404'),
+                $this->createUnreachableHandler(),
+            );
+        } finally {
+            self::assertSame(['load'], $apiStorage->operations);
         }
     }
 

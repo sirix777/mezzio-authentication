@@ -58,7 +58,7 @@ use function unlink;
 
 final class RoutingAttributesIntegrationTest extends TestCase
 {
-    private const MIDDLEWARE_DISPLAY = 'sirix_routing_attributes.middleware_display';
+    private const string MIDDLEWARE_DISPLAY = 'sirix_routing_attributes.middleware_display';
 
     /** @var list<string> */
     private array $cacheFiles = [];
@@ -139,7 +139,7 @@ final class RoutingAttributesIntegrationTest extends TestCase
         )->registerRoutes($routeCollector);
 
         $cachedCollector = $this->createCollector();
-        $this->createProvider([], $compiledRouteRegistrarCache, $this->createMock(AttributeRouteExtractorInterface::class), $container)
+        $this->createProvider([], $compiledRouteRegistrarCache, $this->createStub(AttributeRouteExtractorInterface::class), $container)
             ->registerRoutes($cachedCollector)
         ;
 
@@ -226,8 +226,8 @@ final class RoutingAttributesIntegrationTest extends TestCase
         $webStorage = new InMemoryTokenStorage('web');
         $webStorage->create([]);
         $actor         = $this->createStub(ActorInterface::class);
-        $authenticator = new class($actor) implements AuthenticatorInterface {
-            public function __construct(private readonly ActorInterface $actor) {}
+        $authenticator = new readonly class($actor) implements AuthenticatorInterface {
+            public function __construct(private ActorInterface $actor) {}
 
             public function authenticate(?TokenInterface $token): AuthenticationContext
             {

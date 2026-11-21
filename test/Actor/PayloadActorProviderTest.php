@@ -90,6 +90,20 @@ final class PayloadActorProviderTest extends TestCase
         self::assertSame(['admin'], $actor->getRoles());
     }
 
+    #[Test]
+    public function ignoresRolesThatAreNotAList(): void
+    {
+        $payloadActorProvider = new PayloadActorProvider();
+
+        foreach (['admin', [
+            'primary' => 'admin',
+        ], 1, true] as $roles) {
+            self::assertSame([], $payloadActorProvider->getActor($this->createToken([
+                'roles' => $roles,
+            ]))->getRoles());
+        }
+    }
+
     /**
      * @param array<string, mixed> $payload
      */

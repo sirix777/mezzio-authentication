@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-11-21
+
+### Added
+- PHP 8.6 support.
+
+### Changed
+- Development tooling: PHPUnit `^12.5`; mocks without expectations are now
+  stubs. Rector targets PHP 8.3 (`UP_TO_PHP_83`) without the `EARLY_RETURN`
+  set; PHP CS Fixer uses `@PHP8x3Migration`. CI runs PHP 8.3–8.6.
+- Dev dependency `mezzio/mezzio-router` is now `^3.17 || ^4.1`: 3.15 and 3.16
+  allow no supported PHP version.
+- Added tests for the default-storage `AuthenticationManager`, invalid
+  `authentication.storages` mappings, wrongly typed and blank cookie transport
+  options, full cookie attributes on attach and detach, strict bearer scheme
+  parsing, a well-formed but unknown token in `AuthenticateMiddleware`, non-list
+  `roles` payloads and the HTTP exception defaults.
+
+### Removed
+- PHP 8.2 support. The supported window is now PHP 8.3–8.6.
+
 ## [2.1.0] - 2026-08-18
 
 ### Added
